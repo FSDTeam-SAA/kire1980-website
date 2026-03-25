@@ -32,7 +32,7 @@ const features = [
 
 export default function EverythingYouNeed() {
   return (
-    <section className="bg-[#eef6f5] py-16 md:py-24">
+    <section className="bg-[#F0F9F8] py-16 md:py-24">
       <div className="container mx-auto px-4">
         {/* Heading */}
         <div className="mx-auto max-w-4xl text-center">

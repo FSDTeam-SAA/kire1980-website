@@ -1,6 +1,7 @@
 import Banner from "@/features/Home/components/Banner";
 import EverythingYouNeed from "@/features/Home/components/EverythingYouNeed";
 import ExploreByCategory from "@/features/Home/components/ExploreByCategory";
+import TopRatedNearYou from "@/features/Home/components/TopRatedNearYou";
 import WhyCustomers from "@/features/Home/components/WhyCustomers";
 
 export default function page() {
@@ -10,6 +11,7 @@ export default function page() {
       <WhyCustomers />
       <ExploreByCategory />
       <EverythingYouNeed />
+      <TopRatedNearYou />
     </main>
   );
 }

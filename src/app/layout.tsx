@@ -1,14 +1,20 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Playfair_Display, Poppins } from "next/font/google";
 import "./globals.css";
 import MainProviders from "@/Providers/MainProviders";
 import Provider from "@/Providers/Provider";
 import { Toaster } from "sonner";
 
-const poppins = Poppins({
-  variable: "--font-poppins",
+// const poppins = Poppins({
+//   variable: "--font-poppins",
+//   subsets: ["latin"],
+//   weight: ["300", "400", "500", "600", "700"],
+// });
+
+const playfairDisplay = Playfair_Display({
+  variable: "--font-playfair-display",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -23,7 +29,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
+      <body className={`${playfairDisplay.variable} antialiased`}>
         <MainProviders>
           <Provider> {children} </Provider>
         </MainProviders>

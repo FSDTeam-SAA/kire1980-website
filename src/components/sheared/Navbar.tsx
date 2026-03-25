@@ -28,12 +28,12 @@ export default function Navbar() {
           </button>
 
           {/* Login */}
-          <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-[#1aa39a]">
+          <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
             Log in
           </button>
 
           {/* CTA */}
-          <button className="h-[44px] rounded-xl bg-[#1aa39a] px-6 text-[16px] font-semibold text-white transition hover:opacity-90">
+          <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90">
             List Your Business
           </button>
         </div>

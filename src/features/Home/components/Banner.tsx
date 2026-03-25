@@ -11,11 +11,11 @@ export default function Banner() {
             {/* Heading */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1f2937] leading-tight">
               Book Services <br />
-              Near You <span className="text-[#1aa39a]">Instantly.</span>
+              Near You <span className="text-primary">Instantly.</span>
             </h1>
 
             {/* Subtitle */}
-            <p className="mt-6 text-[#6b7280] text-sm md:text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="mt-6 text-[#6b7280]  text-sm md:text-lg max-w-2xl mx-auto leading-relaxed">
               Discover top-rated professionals for beauty, fitness, and wellness
               etc. Real-time availability, verified reviews, and seamless
               booking all in one place.
@@ -50,11 +50,11 @@ export default function Banner() {
 
             {/* Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="bg-[#1aa39a] text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
+              <button className="bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
                 Book Now
               </button>
 
-              <button className="border border-[#1aa39a] text-[#1aa39a] px-8 py-3 rounded-md font-semibold hover:bg-[#1aa39a]/10 transition">
+              <button className="border border-primary text-primary px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition">
                 Join as Business
               </button>
             </div>

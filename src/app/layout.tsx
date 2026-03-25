@@ -12,9 +12,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "sktch Labs",
-  description:
-    "Design amazing digital experiences that create more happy in the world.",
+  title: "Bookersi",
+  description: "Book Services Near You Instantly.",
 };
 
 export default function RootLayout({

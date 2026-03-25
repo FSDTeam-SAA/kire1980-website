@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../**/*.{js,ts,jsx,tsx}";
 @import "tw-animate-css";
 @plugin "@tailwindcss/typography";
 
@@ -52,13 +53,13 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: #2d2d2d;
-  --primary: #ff8b36;
+  --primary: #F59E0B;
   --primary-foreground: #343a40;
   --secondary: #fbf4ea;
   --secondary-foreground: #2d2d2d;
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: #b9af9;
+  --accent: #b9af99;
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);

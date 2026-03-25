@@ -28,6 +28,25 @@ const steps = [
   },
 ];
 
+const stats = [
+  {
+    value: "2M+",
+    label: "Bookings Completed",
+  },
+  {
+    value: "12K+",
+    label: "Verified Businesses",
+  },
+  {
+    value: "98%",
+    label: "Customer Satisfaction",
+  },
+  {
+    value: "150+",
+    label: "Cities Covered",
+  },
+];
+
 export default function HowItWorks() {
   return (
     <section className="bg-[#F0F9F8] py-16 md:py-24">
@@ -44,8 +63,7 @@ export default function HowItWorks() {
 
         {/* Steps */}
         <div className="relative mt-14">
-          {/* line */}
-          <div className="hidden md:block absolute left-0 right-0 top-6 h-[1px] bg-[#d9e7e5]" />
+          <div className="absolute left-0 right-0 top-7 hidden h-[1px] bg-[#d9e7e5] lg:block" />
 
           <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
             {steps.map((step, index) => {
@@ -56,7 +74,6 @@ export default function HowItWorks() {
                   key={index}
                   className="relative flex flex-col items-center text-center"
                 >
-                  {/* icon */}
                   <div className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full border border-[#d9e7e5] bg-white shadow-sm">
                     <Icon
                       className="h-6 w-6 text-[#1f2937]"
@@ -64,18 +81,32 @@ export default function HowItWorks() {
                     />
                   </div>
 
-                  {/* title */}
                   <h3 className="mt-5 text-2xl font-medium text-[#1f2937]">
                     {step.title}
                   </h3>
 
-                  {/* desc */}
-                  <p className="mt-3 max-w-[240px] text-sm md:text-base leading-relaxed text-[#6b7280]">
+                  <p className="mt-3 max-w-[240px] text-sm leading-relaxed text-[#6b7280] md:text-base">
                     {step.description}
                   </p>
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* Stats Section */}
+        <div className="mt-20 pt-12">
+          <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
+            {stats.map((item, index) => (
+              <div key={index}>
+                <h3 className="text-4xl font-extrabold text-[#1f2937] md:text-6xl">
+                  {item.value}
+                </h3>
+                <p className="mt-3 text-sm font-medium text-[#5f7c7a] md:text-xl">
+                  {item.label}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

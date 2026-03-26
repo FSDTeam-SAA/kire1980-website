@@ -177,17 +177,17 @@ const LoginForm = () => {
         </Form>
 
         {/* Divider */}
-        <div className="relative my-8">
+        {/* <div className="relative my-8">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-gray-200"></span>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
             <span className="bg-white px-4 text-gray-400">Or sign up with</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Social Buttons */}
-        <div>
+        {/* <div>
           <Button
             variant="outline"
             className="h-[52px] w-full rounded-xl border-gray-100 flex gap-2 font-medium hover:bg-gray-100"
@@ -198,10 +198,9 @@ const LoginForm = () => {
               height={20}
               alt="Google"
             />{" "}
-            {/* Replace with your path */}
             Google
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Footer Links */}

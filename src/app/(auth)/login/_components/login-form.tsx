@@ -20,7 +20,6 @@ import { Eye, EyeOff, Lock, ShieldCheck, ArrowRight } from "lucide-react";
 import { signIn } from "next-auth/react";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "sonner";
-import Image from "next/image";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address" }),

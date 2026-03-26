@@ -356,7 +356,7 @@ const CustomerSignUpForm = () => {
         <p className="text-sm text-gray-500">
           Are you a wellness professional?{" "}
           <Link
-            href="/business-signup"
+            href="/sign-up/business"
             className="text-[#1A2E35] font-bold hover:underline"
           >
             Create a business account

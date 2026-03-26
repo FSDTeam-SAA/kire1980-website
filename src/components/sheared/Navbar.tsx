@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Globe, ChevronDown, Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,9 +33,11 @@ export default function Navbar() {
           </button>
 
           {/* Login */}
-          <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
-            Log in
-          </button>
+          <Link href={"/login"} className="hover:cursor-pointer">
+            <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
+              Log in
+            </button>
+          </Link>
 
           {/* CTA */}
           <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90">

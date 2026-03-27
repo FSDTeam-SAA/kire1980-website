@@ -16,14 +16,15 @@ import {
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 
 export default function SecuritySettings() {
   const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
-  const token =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OWFmMmNlNzgzZWEwODIzNWUyODQ1MjIiLCJyb2xlIjoiYWRtaW4iLCJ0b2tlblZlcnNpb24iOjAsImlhdCI6MTc3NDU2NDk3OCwiZXhwIjoxNzc1NDI4OTc4fQ.bnYUKBaARJu-_NA_I397GZZ8LG2bc7h61W8Rf8OAt5k";
+  const session = useSession();
+  const token = session?.data?.user?.accessToken || "";
 
   const [passwords, setPasswords] = useState({
     current: "",
@@ -40,7 +41,7 @@ export default function SecuritySettings() {
 
   const strengthScore = requirements.filter((r) => r.met).length;
 
-  const { mutate, isPending } = useMutation({
+  const { mutate } = useMutation({
     mutationKey: ["change-password"],
     mutationFn: async ({
       oldPassword,

@@ -4,7 +4,7 @@ import * as React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Camera } from "lucide-react";
+import { Camera, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,86 +29,210 @@ import {
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useSession } from "next-auth/react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-// Zod Schema
+/* --------------------------
+SCHEMA
+--------------------------- */
+
 const formSchema = z.object({
-  fullName: z.string().min(2, {
-    message: "Full name must be at least 2 characters.",
-  }),
-  phoneCountryCode: z.string(),
-  phoneNumber: z.string().min(3, {
-    message: "Phone number is required",
-  }),
-  email: z.string().email({
-    message: "Invalid email address",
-  }),
+  fullName: z.string().min(2, "Name must be at least 2 characters"),
+  phoneNumber: z.string().optional(),
+  email: z.string().email(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 export default function PersonalInformationForm() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  const token = session?.user?.accessToken || "";
+
   const [profileImagePreview, setProfileImagePreview] = React.useState<
     string | null
   >(null);
 
+  const [imageLoading, setImageLoading] = React.useState(false);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  /* --------------------------
+  FORM
+  --------------------------- */
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-
     defaultValues: {
       fullName: "",
-      phoneCountryCode: "MK",
       phoneNumber: "",
       email: "",
     },
   });
 
-  // Submit Form (without image)
-  const onSubmit = (data: FormValues) => {
-    const formData = {
-      fullName: data.fullName,
-      phoneCountryCode: data.phoneCountryCode,
-      phoneNumber: data.phoneNumber,
-      email: data.email,
-    };
+  /* --------------------------
+  FETCH PROFILE
+  --------------------------- */
 
-    console.log("Submitted Form Data:", formData);
-  };
+  const { data } = useQuery<UserProfileResponse>({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${session?.user?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
-  // Image Upload
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+      if (!res.ok) throw new Error("Failed to fetch profile");
 
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("File size exceeds 2MB");
-        return;
+      return res.json();
+    },
+    enabled: !!token && !!session?.user?.id,
+  });
+
+  /* --------------------------
+  SET FORM DATA
+  --------------------------- */
+
+  React.useEffect(() => {
+    if (data?.data) {
+      form.setValue("fullName", data.data.fullName);
+      form.setValue("phoneNumber", data.data.phoneNumber || "");
+      form.setValue("email", data.data.email);
+
+      setProfileImagePreview(data.data.avatar);
+    }
+  }, [data, form]);
+
+  /* --------------------------
+  UPDATE TEXT INFO
+  --------------------------- */
+
+  const updateProfileMutation = useMutation({
+    mutationFn: async (values: { fullName: string; phoneNumber: string }) => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${session?.user?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(values),
+        },
+      );
+
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error);
       }
 
-      // ONLY IMAGE LOG
-      console.log("Uploaded Image:", file);
+      return res.json();
+    },
 
-      const reader = new FileReader();
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["user-profile"],
+      });
 
-      reader.onloadend = () => {
-        setProfileImagePreview(reader.result as string);
-      };
+      console.log("Profile updated");
+    },
 
-      reader.readAsDataURL(file);
+    onError: (err) => {
+      console.log("Update error", err);
+    },
+  });
+
+  /* --------------------------
+  UPDATE IMAGE
+  --------------------------- */
+
+  const updateImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${session?.user?.id}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        },
+      );
+
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error);
+      }
+
+      return res.json();
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["user-profile"],
+      });
+
+      console.log("Image updated");
+    },
+
+    onError: (err) => {
+      console.log("Upload error", err);
+    },
+
+    onSettled: () => {
+      setImageLoading(false);
+    },
+  });
+
+  const onSubmit = (values: FormValues) => {
+    const payload = {
+      fullName: values.fullName,
+      phoneNumber: values.phoneNumber || "",
+    };
+
+    updateProfileMutation.mutate(payload);
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0];
+
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert("Max size 10MB");
+      return;
     }
+
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      setProfileImagePreview(reader.result as string);
+    };
+
+    reader.readAsDataURL(file);
+
+    setImageLoading(true);
+
+    updateImageMutation.mutate(file);
   };
 
   const handleUploadClick = () => {
     fileInputRef.current?.click();
   };
+
+  /* --------------------------
+  UI
+  --------------------------- */
 
   return (
     <Card className="w-full my-8 shadow-sm rounded-lg border-muted">
@@ -117,9 +241,7 @@ export default function PersonalInformationForm() {
           Personal Information
         </CardTitle>
 
-        <CardDescription>
-          Update your account profile details and contact info.
-        </CardDescription>
+        <CardDescription>Update your account profile details</CardDescription>
       </CardHeader>
 
       <CardContent className="pt-8">
@@ -130,14 +252,22 @@ export default function PersonalInformationForm() {
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <Avatar className="w-24 h-24">
-                  <AvatarImage src={profileImagePreview || ""} alt="profile" />
+                  <AvatarImage src={profileImagePreview || ""} />
 
-                  <AvatarFallback>JD</AvatarFallback>
+                  <AvatarFallback>
+                    {data?.data?.fullName?.slice(0, 2)}
+                  </AvatarFallback>
                 </Avatar>
 
+                {imageLoading && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full">
+                    <Loader2 className="animate-spin text-white" />
+                  </div>
+                )}
+
                 <div
-                  className="absolute -bottom-2 -right-2 bg-[#26a69a] text-white p-2 rounded-full cursor-pointer"
                   onClick={handleUploadClick}
+                  className="absolute -bottom-2 -right-2 bg-[#26a69a] text-white p-2 rounded-full cursor-pointer"
                 >
                   <Camera size={18} />
                 </div>
@@ -145,8 +275,8 @@ export default function PersonalInformationForm() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  className="hidden"
-                  accept="image/png,image/jpeg,image/jpg"
+                  hidden
+                  accept="image/png,image/jpeg"
                   onChange={handleFileChange}
                 />
               </div>
@@ -155,18 +285,8 @@ export default function PersonalInformationForm() {
                 <Label className="text-lg font-medium">Profile Photo</Label>
 
                 <p className="text-sm text-muted-foreground">
-                  JPG, PNG or GIF. Max size 2MB
+                  JPG or PNG (max 10MB)
                 </p>
-              </div>
-
-              <div className="ml-auto">
-                <Button
-                  type="button"
-                  onClick={handleUploadClick}
-                  className="bg-[#26a69a] hover:bg-[#1f8c82]"
-                >
-                  Upload
-                </Button>
               </div>
             </div>
 
@@ -180,11 +300,7 @@ export default function PersonalInformationForm() {
                   <FormLabel>Full Name</FormLabel>
 
                   <FormControl>
-                    <Input
-                      placeholder="Enter your name"
-                      {...field}
-                      className="h-12"
-                    />
+                    <Input {...field} className="h-12" />
                   </FormControl>
 
                   <FormMessage />
@@ -192,92 +308,51 @@ export default function PersonalInformationForm() {
               )}
             />
 
-            {/* PHONE + EMAIL */}
+            {/* PHONE */}
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* PHONE */}
-
-              <div className="flex gap-2">
-                {" "}
-                {/* Reduced gap for closer look */}
-                {/* Country Code Select */}
-                <FormItem className="w-[110px]">
-                  {" "}
-                  {/* Slightly smaller width */}
+            <FormField
+              control={form.control}
+              name="phoneNumber"
+              render={({ field }) => (
+                <FormItem>
                   <FormLabel>Phone Number</FormLabel>
-                  <Select
-                    value={form.watch("phoneCountryCode")}
-                    onValueChange={(value) =>
-                      form.setValue("phoneCountryCode", value)
-                    }
-                  >
-                    <SelectTrigger className="!h-12">
-                      <SelectValue placeholder="Code" />
-                    </SelectTrigger>
 
-                    <SelectContent>
-                      <SelectItem value="MK">MK (+389)</SelectItem>
-                      <SelectItem value="US">US (+1)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <Input {...field} className="h-12" />
+                  </FormControl>
+
+                  <FormMessage />
                 </FormItem>
-                {/* Phone Number Input */}
-                <FormField
-                  control={form.control}
-                  name="phoneNumber"
-                  render={({ field }) => (
-                    <FormItem className="flex-1">
-                      <FormLabel className="opacity-0 pointer-events-none">
-                        {" "}
-                        {/* Invisible label for alignment */}
-                        Phone Number
-                      </FormLabel>
+              )}
+            />
 
-                      <FormControl>
-                        <Input
-                          placeholder="123 456 789"
-                          {...field}
-                          className="h-12"
-                        />
-                      </FormControl>
+            {/* EMAIL */}
 
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Email</FormLabel>
 
-              {/* EMAIL */}
+                  <FormControl>
+                    <Input disabled {...field} className="h-12" />
+                  </FormControl>
 
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-                    <FormControl>
-                      <Input
-                        placeholder="Enter your email"
-                        {...field}
-                        className="h-12"
-                      />
-                    </FormControl>
-
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* SUBMIT BUTTON */}
+            {/* SAVE BUTTON */}
 
             <div className="flex justify-end">
               <Button
                 type="submit"
-                className="bg-[#26a69a] hover:bg-[#1f8c82] px-8 h-12"
+                disabled={updateProfileMutation.isPending}
+                className="bg-[#26a69a] hover:bg-[#1f8c82]"
               >
-                Save Changes
+                {updateProfileMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
           </form>

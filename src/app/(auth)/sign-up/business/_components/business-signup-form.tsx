@@ -16,7 +16,7 @@ import {
   Lock,
   ShieldCheck,
   CheckCircle2,
-  Image as Trash2,
+  Trash2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -44,6 +44,8 @@ const businessSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
   businessEmail: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  phoneNumber: z.string().min(10, "Phone number is required"),
+  totalStaff: z.number().min(1, "At least 1 staff member is required"),
   country: z.string().min(1, "Select country"),
   city: z.string().min(1, "City/Address is required"),
   postalCode: z.string().optional(),
@@ -88,6 +90,8 @@ const BusinessSignUpForm = () => {
       businessName: "",
       businessEmail: "",
       password: "",
+      phoneNumber: "",
+      totalStaff: 5,
       country: "",
       city: "",
       postalCode: "",
@@ -166,21 +170,20 @@ const BusinessSignUpForm = () => {
         },
       );
 
-      const data = await response.json();
-
       const result = await response.json();
 
-      if (!response.ok) throw new Error(data?.message || "Registration failed");
+      if (!response.ok)
+        throw new Error(result?.message || "Registration failed");
 
       // Extract access token from the nested response structure
-      const token = result?.data?.accessToken;
+      const token = result?.data?.data?.accessToken;
       if (!token) throw new Error("No access token received");
 
       // Store token in localStorage
       localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(result?.data?.user));
+      localStorage.setItem("user", JSON.stringify(result?.data?.data?.user));
 
-      return { token, user: result?.data?.user };
+      return { token, user: result?.data?.data?.user };
     },
     onSuccess: (data) => {
       toast.success("Business account created successfully!");
@@ -200,29 +203,62 @@ const BusinessSignUpForm = () => {
     mutationFn: async (values: BusinessFormValues) => {
       const formData = new FormData();
 
-      // Append all fields as per the screenshot structure
+      // Required fields - match exactly with backend DTO
       formData.append("businessName", values.businessName);
       formData.append("businessEmail", values.businessEmail);
-      formData.append("phoneNumber", ""); // Add phone number field if needed
+      formData.append("phoneNumber", values.phoneNumber);
       formData.append("businessCategory", values.sector);
-      formData.append("totalStaff", ""); // Add total staff field if needed
+      formData.append("totalStaff", String(values.totalStaff));
       formData.append("country", values.country);
       formData.append("city", values.city);
-      formData.append("postalCode", values.postalCode || "");
+
+      // Postal code as integer (only if provided and not empty)
+      if (values.postalCode && values.postalCode.trim() !== "") {
+        const postalCodeNum = parseInt(values.postalCode);
+        if (!isNaN(postalCodeNum)) {
+          formData.append("postalCode", String(postalCodeNum));
+        }
+      }
+
       formData.append("sector", values.sector);
       formData.append("description", values.description);
 
-      // Append opening hours as JSON string
-      formData.append("openingHour", JSON.stringify(values.openingHours));
+      // Format opening hours - only include days that are open, without isOpen field
+      const formattedOpeningHours = values.openingHours
+        .filter((hour) => hour.isOpen) // Only include open days
+        .map(({ day, openTime, closeTime }) => ({
+          day,
+          openTime,
+          closeTime,
+        }));
+
+      // Only send openingHours if there are open days
+      if (formattedOpeningHours.length > 0) {
+        formData.append("openingHour", JSON.stringify(formattedOpeningHours));
+      }
 
       // Append cover photos
       if (values.coverPhotos && values.coverPhotos.length > 0) {
         values.coverPhotos.forEach((photo) => {
-          formData.append(`gallery`, photo);
+          formData.append("gallery", photo);
         });
       }
 
       const token = accessToken || localStorage.getItem("token");
+
+      console.log("Sending data:", {
+        businessName: values.businessName,
+        businessEmail: values.businessEmail,
+        phoneNumber: values.phoneNumber,
+        businessCategory: values.sector,
+        totalStaff: values.totalStaff,
+        country: values.country,
+        city: values.city,
+        postalCode: values.postalCode,
+        sector: values.sector,
+        openingHour: formattedOpeningHours,
+        description: values.description,
+      });
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/businesses`,
@@ -236,8 +272,10 @@ const BusinessSignUpForm = () => {
       );
 
       const data = await response.json();
-      if (!response.ok)
+      if (!response.ok) {
+        console.error("Business creation error:", data);
         throw new Error(data?.message || "Business profile creation failed");
+      }
       return data;
     },
     onSuccess: () => {
@@ -245,6 +283,7 @@ const BusinessSignUpForm = () => {
       router.push("/dashboard");
     },
     onError: (err: any) => {
+      console.error("Mutation error:", err);
       toast.error(err.message);
     },
   });
@@ -300,7 +339,14 @@ const BusinessSignUpForm = () => {
       return;
     }
 
-    if (step === 2) fieldsToValidate = ["country", "city", "sector"];
+    if (step === 2)
+      fieldsToValidate = [
+        "phoneNumber",
+        "totalStaff",
+        "country",
+        "city",
+        "sector",
+      ];
     if (step === 3) fieldsToValidate = ["openingHours"];
     if (step === 4) fieldsToValidate = ["coverPhotos"];
     if (step === 5) fieldsToValidate = ["description"];
@@ -478,12 +524,58 @@ const BusinessSignUpForm = () => {
                 </div>
               )}
 
-              {/* STEP 2: Location - With All Countries */}
+              {/* STEP 2: Location & Business Details */}
               {step === 2 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
                   <h2 className="text-2xl font-serif text-[#1A2E35] font-medium">
-                    Where is your business located?
+                    Business Contact & Location
                   </h2>
+
+                  <FormField
+                    control={form.control}
+                    name="phoneNumber"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold">
+                          Phone Number
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="+1234567890"
+                            className="bg-[#F4F9F9] border-none h-12 rounded-xl"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="totalStaff"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold">
+                          Total Staff
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            min="1"
+                            placeholder="Number of staff members"
+                            className="bg-[#F4F9F9] border-none h-12 rounded-xl"
+                            onChange={(e) =>
+                              field.onChange(parseInt(e.target.value) || 1)
+                            }
+                            value={field.value}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
                   <FormField
                     control={form.control}
                     name="country"
@@ -495,7 +587,7 @@ const BusinessSignUpForm = () => {
                           defaultValue={field.value}
                         >
                           <FormControl>
-                            <SelectTrigger className="bg-[#F4F9F9] border-none h-12 rounded-xl">
+                            <SelectTrigger className="bg-[#F4F9F9] border-none h-12 rounded-xl !w-full">
                               <SelectValue
                                 placeholder={
                                   isLoadingCountries
@@ -520,6 +612,7 @@ const BusinessSignUpForm = () => {
                       </FormItem>
                     )}
                   />
+
                   <FormField
                     control={form.control}
                     name="city"
@@ -539,6 +632,7 @@ const BusinessSignUpForm = () => {
                       </FormItem>
                     )}
                   />
+
                   <div className="grid grid-cols-2 gap-4">
                     <FormField
                       control={form.control}
@@ -558,6 +652,7 @@ const BusinessSignUpForm = () => {
                         </FormItem>
                       )}
                     />
+
                     <FormField
                       control={form.control}
                       name="sector"

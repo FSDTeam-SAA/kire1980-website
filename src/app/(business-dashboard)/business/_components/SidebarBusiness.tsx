@@ -31,7 +31,11 @@ import Image from "next/image";
 
 const navigation = [
   { name: "Dashboard Overview", href: "/user/profile", icon: SendToBack },
-  { name: "Service Management", href: "/user/bookings", icon: ShoppingBag },
+  {
+    name: "Service Management",
+    href: "/business/service-management",
+    icon: ShoppingBag,
+  },
   { name: "Staff Management", href: "/user/wish-list", icon: UserRoundPen },
   { name: "Booking Calendar", href: "/user/setting", icon: CalendarDays },
   { name: "Booking Management", href: "/user/setting", icon: Calendar },

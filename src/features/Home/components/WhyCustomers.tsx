@@ -31,7 +31,7 @@ export default function WhyCustomers() {
       <div className="container mx-auto px-4 text-center">
         {/* Heading */}
         <h2 className="text-3xl md:text-5xl font-bold text-[#1f2937]">
-          Why Customers Trust BookEase
+          Why Customers Trust BOOKERSI
         </h2>
 
         {/* Items */}

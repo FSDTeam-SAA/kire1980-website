@@ -44,7 +44,7 @@ const navigation = [
   { name: "Booking Calendar", href: "/user/setting", icon: CalendarDays },
   { name: "Booking Management", href: "/user/setting", icon: Calendar },
   { name: "Reviews & Ratings", href: "/business/review-ratings", icon: Star },
-  { name: "Earnings", href: "/user/setting", icon: DollarSign },
+  { name: "Earnings", href: "/business/earnings", icon: DollarSign },
   { name: "Settings", href: "/user/setting", icon: Settings },
 ];
 

@@ -41,7 +41,7 @@ export default function EverythingYouNeed() {
           </h2>
 
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-relaxed text-[#6b7280] md:text-lg">
-            BookEase is built for both customers who want frictionless booking
+            BOOKERSI is built for both customers who want frictionless booking
             and businesses that want to scale effortlessly.
           </p>
 

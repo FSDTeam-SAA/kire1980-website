@@ -7,7 +7,7 @@ const testimonials = [
   {
     id: 1,
     rating: 4,
-    text: "“BookEase completely changed how I manage my salon appointments. My no-show rate dropped by 60% and I'm fully booked every week. Absolute game-changer.”",
+    text: "“BOOKERSI completely changed how I manage my salon appointments. My no-show rate dropped by 60% and I'm fully booked every week. Absolute game-changer.”",
     name: "Sarah Mitchell",
     role: "Owner, Luxe Hair Studio",
     image: "/images/image1.jpg",
@@ -25,7 +25,7 @@ const testimonials = [
   {
     id: 3,
     rating: 4,
-    text: "“Our wellness center grew 40% in 3 months after listing on BookEase. The analytics dashboard is incredibly insightful and the client management tools save us hours every week.”",
+    text: "“Our wellness center grew 40% in 3 months after listing on BOOKERSI. The analytics dashboard is incredibly insightful and the client management tools save us hours every week.”",
     name: "Priya Rajan",
     role: "Director, Zen Garden Spa",
     image: "/images/imag-23.jpg",

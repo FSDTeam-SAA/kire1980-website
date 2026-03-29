@@ -42,7 +42,11 @@ const navigation = [
     icon: UserRoundPen,
   },
   { name: "Booking Calendar", href: "/user/setting", icon: CalendarDays },
-  { name: "Booking Management", href: "/user/setting", icon: Calendar },
+  {
+    name: "Booking Management",
+    href: "/business/booking-management",
+    icon: Calendar,
+  },
   { name: "Reviews & Ratings", href: "/business/review-ratings", icon: Star },
   { name: "Earnings", href: "/business/earnings", icon: DollarSign },
   { name: "Settings", href: "/user/setting", icon: Settings },

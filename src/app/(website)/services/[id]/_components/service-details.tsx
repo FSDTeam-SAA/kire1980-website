@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Link from "next/link";
 
 // --- Types ---
 interface ServiceItemProps {
@@ -299,9 +300,11 @@ const ServiceDetails = () => {
                     className="w-full"
                   />
                 </div>
-                <Button className="w-full bg-[#0096a1] hover:bg-[#007a83] py-6 text-md font-bold">
-                  Continue
-                </Button>
+                <Link href={`/services/adfasdf/service-review`}>
+                  <Button className="w-full bg-[#0096a1] hover:bg-[#007a83] py-6 text-md font-bold">
+                    Continue
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>

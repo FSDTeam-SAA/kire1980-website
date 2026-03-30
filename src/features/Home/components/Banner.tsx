@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, MapPin } from "lucide-react";
+import Link from "next/link";
 
 export default function Banner() {
   return (
@@ -50,9 +51,11 @@ export default function Banner() {
 
             {/* Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
-                Book Now
-              </button>
+              <Link href={`/services/adfaf`}>
+                <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
+                  Book Now
+                </button>
+              </Link>
 
               <button className="w-full sm:w-auto border border-primary text-primary px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition">
                 Join as Business

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 
 const categories = [
   {
@@ -60,9 +61,11 @@ export default function ExploreByCategory() {
                   </p>
                 </div>
 
-                <button className="shrink-0 rounded-lg bg-[#1aa39a] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
-                  Book Now
-                </button>
+                <Link href={`/services/adfaf`}>
+                  <button className="shrink-0 rounded-lg bg-[#1aa39a] px-5 py-3 text-sm font-semibold text-white transition hover:opacity-90">
+                    Book Now
+                  </button>
+                </Link>
               </div>
             </div>
           ))}

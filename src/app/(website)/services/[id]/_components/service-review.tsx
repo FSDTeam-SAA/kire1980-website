@@ -4,6 +4,7 @@ import React from "react";
 import { Star, MapPin, Clock, Calendar, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
+import Link from "next/link";
 
 interface SelectedService {
   id: string;
@@ -146,9 +147,11 @@ const ServiceReview = () => {
           >
             Edit Booking
           </Button>
-          <Button className="flex-1 py-7 bg-[#0096a1] hover:bg-[#007a83] text-white font-bold rounded-xl shadow-lg shadow-[#0096a1]/20">
-            Confirm Booking
-          </Button>
+          <Link href={`/services/adfasdf/payment-method`}>
+            <Button className="flex-1 py-7 bg-[#0096a1] hover:bg-[#007a83] text-white font-bold rounded-xl shadow-lg shadow-[#0096a1]/20">
+              Confirm Booking
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

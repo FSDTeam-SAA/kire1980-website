@@ -17,6 +17,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
+import Link from "next/link";
 
 const services = [
   {
@@ -88,9 +89,11 @@ export default function ServiceManagement() {
             <span className="text-slate-600">Service Management</span>
           </nav>
         </div>
-        <button className="bg-[#169C9F] hover:bg-[#138689] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all">
-          Add New Service
-        </button>
+        <Link href="/business/service-management/add">
+          <button className="bg-[#169C9F] hover:bg-[#138689] text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all">
+            Add New Service
+          </button>
+        </Link>
       </div>
 
       {/* Stats Row */}

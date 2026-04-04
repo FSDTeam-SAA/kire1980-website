@@ -79,6 +79,8 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid server response");
           }
 
+          console.log(loginData);
+
           // Return the user object that matches the extended User type
           return {
             id: loginData.user.id,

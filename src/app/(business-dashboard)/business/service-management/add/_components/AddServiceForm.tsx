@@ -14,6 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 
 const featureOptions = [
   { id: "waiting-area", label: "Comfortable Waiting Area" },
@@ -25,10 +27,15 @@ const featureOptions = [
 ];
 
 export default function AddServiceForm() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+
+  const token = session?.user?.accessToken || "";
+
   const [formData, setFormData] = useState({
     serviceName: "",
     category: "",
-    duration: "60 min",
+    duration: "30 mins",
     price: "",
     description: "",
     features: [] as string[],
@@ -54,8 +61,58 @@ export default function AddServiceForm() {
     });
   };
 
+  const addServiceMutation = useMutation({
+    mutationFn: async (values: {
+      serviceName: string;
+      category: string;
+      serviceDuration: string;
+      price: number;
+      description: string;
+      isFeatured: string[];
+    }) => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/services`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(values),
+        },
+      );
+
+      if (!res.ok) {
+        const error = await res.text();
+        throw new Error(error);
+      }
+
+      return res.json();
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["business-services"],
+      });
+
+      console.log("Service added");
+    },
+
+    onError: (err) => {
+      console.log("Add service error", err);
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    addServiceMutation.mutate({
+      serviceName: formData.serviceName,
+      category: formData.category,
+      serviceDuration: formData.duration,
+      price: parseFloat(formData.price),
+      description: formData.description,
+      isFeatured: formData.features,
+    });
 
     console.log("Submitted Data:", formData);
   };
@@ -102,8 +159,8 @@ export default function AddServiceForm() {
 
                 <SelectContent>
                   <SelectItem value="wellness">Wellness</SelectItem>
-                  <SelectItem value="relaxation">Relaxation</SelectItem>
-                  <SelectItem value="therapeutic">Therapeutic</SelectItem>
+                  <SelectItem value="fitness">Fitness</SelectItem>
+                  <SelectItem value="beauty">Beauty</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -2,12 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Globe, ChevronDown, Menu, X } from "lucide-react";
+import { Globe, ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const [userMenu, setUserMenu] = useState(false);
+  const session = useSession();
 
   return (
     <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
@@ -32,12 +35,56 @@ export default function Navbar() {
             <ChevronDown className="h-4 w-4" />
           </button>
 
-          {/* Login */}
-          <Link href={"/login"} className="hover:cursor-pointer">
-            <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
-              Log in
-            </button>
-          </Link>
+          {/* Login / User Menu */}
+          {session?.data?.user ? (
+            <div className="relative">
+              <button
+                onClick={() => setUserMenu(!userMenu)}
+                className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white border border-gray-200 hover:bg-gray-50"
+              >
+                {session.data.user.profileImage ? (
+                  <Image
+                    src={session.data.user.profileImage}
+                    alt="User Avatar"
+                    width={40}
+                    height={40}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <User className="w-5 h-5 text-gray-700" />
+                )}
+              </button>
+
+              {userMenu && (
+                <div className="absolute right-0 mt-3 w-[200px] bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
+                  <Link
+                    href="/user/profile"
+                    className="block px-4 py-3 text-sm hover:bg-gray-50"
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/business-profile"
+                    className="block px-4 py-3 text-sm hover:bg-gray-50"
+                  >
+                    Business Profile
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-gray-50 flex items-center gap-2"
+                  >
+                    <LogOut size={16} /> Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <Link href={"/login"} className="hover:cursor-pointer">
+              <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
+                Log in
+              </button>
+            </Link>
+          )}
 
           {/* CTA */}
           <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90">
@@ -75,15 +122,44 @@ export default function Navbar() {
                 <ChevronDown className="h-4 w-4" />
               </button>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col gap-3">
-                <button className="w-full h-[54px] text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition">
-                  Log in
-                </button>
-                <button className="w-full h-[54px] rounded-xl bg-primary text-[16px] font-semibold text-white hover:opacity-90 transition shadow-sm">
-                  List Your Business
-                </button>
-              </div>
+              {/* Action Buttons / User Menu */}
+              {session?.data?.user ? (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/profile"
+                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                  >
+                    My Profile
+                  </Link>
+                  <Link
+                    href="/business-profile"
+                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                  >
+                    Business Profile
+                  </Link>
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-red-500 border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                  >
+                    Logout
+                  </button>
+                  <button className="w-full h-[54px] rounded-xl bg-primary text-[16px] font-semibold text-white hover:opacity-90 transition shadow-sm">
+                    List Your Business
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  <Link
+                    href="/login"
+                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                  >
+                    Log in
+                  </Link>
+                  <button className="w-full h-[54px] rounded-xl bg-primary text-[16px] font-semibold text-white hover:opacity-90 transition shadow-sm">
+                    List Your Business
+                  </button>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

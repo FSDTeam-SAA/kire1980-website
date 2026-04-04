@@ -30,7 +30,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 const navigation = [
-  { name: "Dashboard Overview", href: "/user/profile", icon: SendToBack },
+  { name: "Dashboard Overview", href: "/", icon: SendToBack },
   {
     name: "Service Management",
     href: "/business/service-management",
@@ -41,7 +41,11 @@ const navigation = [
     href: "/business/staff-management",
     icon: UserRoundPen,
   },
-  { name: "Booking Calendar", href: "/user/setting", icon: CalendarDays },
+  {
+    name: "Booking Calendar",
+    href: "/business/booking-calendar",
+    icon: CalendarDays,
+  },
   {
     name: "Booking Management",
     href: "/business/booking-management",

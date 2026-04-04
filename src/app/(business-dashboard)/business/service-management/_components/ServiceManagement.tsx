@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { MoreVertical, ChevronRight } from "lucide-react";
 import {
@@ -18,6 +20,9 @@ import {
   DropdownMenuItem,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useServiceId } from "../../../../../../zustand/useServiceId";
 
 const services = [
   {
@@ -75,6 +80,31 @@ const stats = [
 ];
 
 export default function ServiceManagement() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken || "";
+  const { serviceId } = useServiceId();
+
+  const { data } = useQuery({
+    queryKey: ["business-services", session?.user?.id],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/services/business/${serviceId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch profile");
+
+      return res.json();
+    },
+    enabled: !!token && !!session?.user?.id,
+  });
+
+  console.log(data);
+
   return (
     <div className=" min-h-screen font-sans">
       {/* Header */}

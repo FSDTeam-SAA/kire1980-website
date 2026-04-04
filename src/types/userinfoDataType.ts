@@ -6,7 +6,9 @@ type UserProfileResponse = {
     fullName: string;
     email: string;
     role: string;
-    businessId: string | null;
+    businessId: {
+      _id: string;
+    };
     verified: boolean;
     status: "ACTIVE" | "INACTIVE";
     tokenVersion: number;

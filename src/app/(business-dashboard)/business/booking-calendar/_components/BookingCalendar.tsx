@@ -1,256 +1,264 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable prefer-const */
+
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 
-/* ---------------- Stats ---------------- */
+// --- Types ---
+interface Booking {
+  _id: string;
+  services: Array<{
+    serviceId: {
+      serviceName: string;
+      serviceDuration: string;
+      price: number;
+    };
+    dateAndTime: string;
+  }>;
+  bookingStatus: "pending" | "confirmed" | "cancelled" | "completed";
+}
 
-const stats = [
-  { label: "Today Booking", value: "24", trend: null },
-  {
-    label: "Cancelled",
-    value: "125",
-    trend: "+ 36% ↑",
-    trendColor: "text-green-500",
-  },
-  { label: "Completed", value: "22", trend: null },
-  { label: "Today's Revenue", value: "$72", trend: null },
-];
+interface ApiResponse {
+  data: {
+    data: Booking[];
+  };
+}
 
-const timeSlots = [
-  "6:00 AM",
-  "7:00 AM",
-  "8:00 AM",
-  "9:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "1:00 PM",
-];
+const fetchBookings = async (token: string): Promise<ApiResponse> => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+  if (!response.ok) throw new Error("Failed to fetch bookings");
+  return response.json();
+};
 
-/* ---------------- Demo Events ---------------- */
-
-const events = [
-  {
-    dayIdx: 0,
-    timeIdx: 0,
-    name: "Facial",
-    duration: "60 min",
-    color: "bg-[#E8F7F2] text-[#169C9F]",
-  },
-  {
-    dayIdx: 1,
-    timeIdx: 1,
-    name: "Hair Cut",
-    duration: "30 min",
-    color: "bg-[#169C9F] text-white",
-  },
-  {
-    dayIdx: 2,
-    timeIdx: 2,
-    name: "Massage",
-    duration: "90 min",
-    color: "bg-[#FDE7D2] text-[#D97706]",
-  },
-  {
-    dayIdx: 3,
-    timeIdx: 3,
-    name: "Spa",
-    duration: "45 min",
-    color: "bg-[#FCE7E7] text-[#EF4444]",
-  },
-  {
-    dayIdx: 4,
-    timeIdx: 0,
-    name: "Hair Cut",
-    duration: "60 min",
-    color: "bg-[#E8F7F2] text-[#169C9F]",
-  },
-];
-
-/* ---------------- Helpers ---------------- */
-
-function getStartOfWeek(date: Date) {
+const getStartOfWeek = (date: Date) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + 1;
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(d.setDate(diff));
-}
-
-function formatDate(date: Date) {
-  return date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  });
-}
-
-/* ---------------- Component ---------------- */
+};
 
 export default function BookingCalendar() {
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // আপনার API রেসপন্স ২০শে মার্চ ২০২৬ এর, তাই ক্যালেন্ডার সেখানে সেট করা
+  const [currentDate, setCurrentDate] = useState(new Date("2026-03-20"));
+  const session = useSession();
+  const token = session?.data?.user?.accessToken;
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["bookings-calendar"],
+    queryFn: () => fetchBookings(token as string),
+    enabled: !!token,
+  });
+
+  const allBookings = useMemo(() => data?.data?.data || [], [data]);
+
+  // --- সব টাইম স্লট (সকাল ৬টা থেকে রাত ১০টা) ---
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = 6; hour <= 22; hour++) {
+      const ampm = hour >= 12 ? "PM" : "AM";
+      const displayHour = hour % 12 || 12;
+      slots.push(`${displayHour}:00 ${ampm}`);
+    }
+    return slots;
+  }, []);
 
   const startOfWeek = getStartOfWeek(currentDate);
 
-  const days = Array.from({ length: 6 }).map((_, i) => {
+  const days = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(startOfWeek);
     d.setDate(startOfWeek.getDate() + i);
-
+    const count = allBookings.filter(
+      (b) =>
+        new Date(b.services[0]?.dateAndTime).toDateString() ===
+        d.toDateString(),
+    ).length;
     return {
-      date: formatDate(d),
-      bookings: `10 Booking`,
+      label: d
+        .toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })
+        .replace(/ /g, "-"),
+      fullDate: d,
+      count,
     };
   });
 
-  const endDate = new Date(startOfWeek);
-  endDate.setDate(startOfWeek.getDate() + 6);
+  const getBookingForSlot = (day: Date, timeSlot: string) => {
+    return allBookings.find((b) => {
+      const bDate = new Date(b.services[0]?.dateAndTime);
+      let hours = bDate.getHours();
+      const ampm = hours >= 12 ? "PM" : "AM";
+      const displayHour = hours % 12 || 12;
+      const formattedTime = `${displayHour}:00 ${ampm}`;
 
-  /* -------- Navigation -------- */
-
-  const nextWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 7);
-    setCurrentDate(d);
+      return (
+        formattedTime === timeSlot &&
+        bDate.toDateString() === day.toDateString()
+      );
+    });
   };
 
-  const prevWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 7);
-    setCurrentDate(d);
+  const getStatusStyles = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-[#009296] text-white";
+      case "completed":
+        return "bg-[#E6F4F4] text-[#009296] border border-[#009296]/20";
+      case "cancelled":
+        return "bg-[#FFEBEB] text-[#FF4D4D] border border-[#FF4D4D]/20";
+      default:
+        return "bg-[#FFF4E5] text-[#FF9900] border border-[#FF9900]/20";
+    }
   };
 
-  const goToday = () => {
-    setCurrentDate(new Date());
-  };
+  if (error)
+    return (
+      <div className="p-10 text-center text-red-500">Error loading data.</div>
+    );
 
   return (
-    <div className="p-8 bg-[#F8FAFB] min-h-screen font-sans">
-      {/* Header */}
-
+    <div className="min-h-screen bg-[#F9FAFB] p-4 md:p-8 font-sans">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Booking Calendar</h1>
-
-        <nav className="flex items-center gap-2 text-xs font-medium text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-[#111827]">Booking Calendar</h1>
+        <div className="flex items-center gap-2 text-sm text-[#6B7280] mt-1">
           <span>Dashboard</span>
           <ChevronRight size={14} />
-          <span className="text-slate-600">Service Management</span>
-        </nav>
+          <span className="text-[#374151] font-medium">Service Management</span>
+        </div>
       </div>
 
-      {/* Stats */}
-
-      <div className="grid grid-cols-4 gap-6 mb-10">
-        {stats.map((stat, i) => (
-          <Card key={i} className="p-6 rounded-xl border-slate-100 shadow-sm">
-            <div className="flex justify-between">
-              <p className="text-xs text-slate-400">{stat.label}</p>
-              {stat.trend && (
-                <span className={`text-[10px] font-bold ${stat.trendColor}`}>
-                  {stat.trend}
-                </span>
-              )}
+      {isLoading ? (
+        <Skeleton className="h-[700px] w-full rounded-2xl" />
+      ) : (
+        <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+          {/* Controls */}
+          <div className="p-6 flex flex-col md:flex-row items-center justify-between gap-4 border-b">
+            <div className="flex bg-[#F3F4F6] p-1 rounded-lg">
+              <button
+                onClick={() =>
+                  setCurrentDate(
+                    new Date(currentDate.setDate(currentDate.getDate() - 7)),
+                  )
+                }
+                className="px-4 py-2 text-sm font-semibold"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => setCurrentDate(new Date())}
+                className="px-6 py-2 text-sm font-bold bg-[#009296] text-white rounded-md"
+              >
+                Today
+              </button>
+              <button
+                onClick={() =>
+                  setCurrentDate(
+                    new Date(currentDate.setDate(currentDate.getDate() + 7)),
+                  )
+                }
+                className="px-4 py-2 text-sm font-semibold"
+              >
+                Next
+              </button>
             </div>
 
-            <p className="text-2xl font-bold text-slate-800 mt-2">
-              {stat.value}
-            </p>
-          </Card>
-        ))}
-      </div>
+            <div className="text-lg font-bold text-[#111827]">
+              {days[0].fullDate.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+              })}{" "}
+              -{" "}
+              {days[6].fullDate.toLocaleDateString("en-GB", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}
+            </div>
 
-      {/* Calendar */}
-
-      <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm overflow-hidden">
-        {/* Navigation */}
-
-        <div className="flex items-center justify-between p-6 border-b">
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <Button
-              variant="ghost"
-              className="rounded-none px-6 border-r"
-              onClick={prevWeek}
-            >
-              Back
-            </Button>
-
-            <Button
-              className="rounded-none px-6 bg-[#169C9F]"
-              onClick={goToday}
-            >
-              Today
-            </Button>
-
-            <Button
-              variant="ghost"
-              className="rounded-none px-6 border-l"
-              onClick={nextWeek}
-            >
-              Next
-            </Button>
+            <div className="flex bg-[#F3F4F6] p-1 rounded-lg">
+              <button className="px-4 py-2 text-sm font-semibold">Month</button>
+              <button className="px-6 py-2 text-sm font-bold bg-[#009296] text-white rounded-md">
+                Week
+              </button>
+              <button className="px-4 py-2 text-sm font-semibold">Day</button>
+            </div>
           </div>
 
-          <span className="text-lg font-semibold text-slate-700">
-            {formatDate(startOfWeek)} - {formatDate(endDate)}
-          </span>
-
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <Button variant="ghost" className="rounded-none px-6 border-r">
-              Month
-            </Button>
-            <Button className="rounded-none px-6 bg-[#169C9F]">Week</Button>
-            <Button variant="ghost" className="rounded-none px-6 border-l">
-              Day
-            </Button>
-          </div>
-        </div>
-
-        {/* Days Header */}
-
-        <div className="grid grid-cols-7 border-b">
-          <div className="border-r h-20"></div>
-
-          {days.map((day, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center justify-center border-r h-20"
-            >
-              <p className="text-sm font-semibold">{day.date}</p>
-              <p className="text-[11px] text-slate-400">{day.bookings}</p>
-            </div>
-          ))}
-        </div>
-
-        {/* Time Grid */}
-
-        {timeSlots.map((time, timeIdx) => (
-          <div key={timeIdx} className="grid grid-cols-7 border-b">
-            <div className="flex items-center justify-center border-r h-20 text-sm">
-              {time}
-            </div>
-
-            {Array.from({ length: 6 }).map((_, dayIdx) => {
-              const event = events.find(
-                (e) => e.dayIdx === dayIdx && e.timeIdx === timeIdx,
-              );
-
-              return (
-                <div key={dayIdx} className="border-r h-20 relative">
-                  {event && (
-                    <div
-                      className={`absolute inset-1 rounded-sm p-2 flex flex-col items-center justify-center text-center ${event.color}`}
+          {/* Scrollable Grid */}
+          <div className="overflow-x-auto max-h-[800px] overflow-y-auto">
+            <table className="w-full border-collapse sticky-header">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr>
+                  <th className="w-28 py-5 border-b bg-[#FCFDFD]"></th>
+                  {days.map((day, i) => (
+                    <th
+                      key={i}
+                      className="p-5 border-l border-b text-center min-w-[160px] bg-[#FCFDFD]"
                     >
-                      <p className="text-[10px] font-bold">{event.name}</p>
-                      <p className="text-[9px] opacity-80">{event.duration}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                      <p className="text-[14px] font-bold text-[#111827]">
+                        {day.label}
+                      </p>
+                      <p className="text-[12px] text-[#6B7280] font-medium">
+                        {day.count} Booking
+                      </p>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {timeSlots.map((time, tIdx) => (
+                  <tr
+                    key={tIdx}
+                    className="hover:bg-gray-50/50 transition-colors"
+                  >
+                    <td className="py-6 px-4 text-center text-[13px] font-bold text-[#4B5563] border-b bg-[#FCFDFD]">
+                      {time}
+                    </td>
+                    {days.map((day, dIdx) => {
+                      const booking = getBookingForSlot(day.fullDate, time);
+                      return (
+                        <td
+                          key={dIdx}
+                          className="border-l border-b h-28 p-1.5 relative"
+                        >
+                          {booking && (
+                            <div
+                              className={`w-full h-full rounded-xl flex flex-col items-center justify-center text-center p-3 shadow-sm ${getStatusStyles(booking.bookingStatus)}`}
+                            >
+                              <p className="text-[12px] font-extrabold uppercase leading-tight">
+                                {booking.services[0].serviceId.serviceName}
+                              </p>
+                              <p className="text-[10px] mt-1.5 font-bold opacity-80">
+                                {booking.services[0].serviceId.serviceDuration}
+                              </p>
+                            </div>
+                          )}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

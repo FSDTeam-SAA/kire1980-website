@@ -13,15 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-import { useServiceId } from "../../../../../../../zustand/useServiceId";
+import { useBusinessId } from "../../../../../../../zustand/useServiceId";
 
 export default function AddServiceForm() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
-  const { serviceId } = useServiceId();
+  const { businessId } = useBusinessId();
 
   const [formData, setFormData] = useState({
     serviceName: "",
@@ -92,7 +92,7 @@ export default function AddServiceForm() {
       price: parseFloat(formData.price),
       description: formData.description,
       isFeatured: true,
-      businessId: serviceId || "",
+      businessId: businessId || "",
     });
   };
 

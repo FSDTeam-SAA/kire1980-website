@@ -1,8 +1,8 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import { Users, Calendar, Wallet, Star } from "lucide-react";
-import { useServiceId } from "../../../../../../zustand/useServiceId";
 import { useSession } from "next-auth/react";
+import { useBusinessId } from "../../../../../../zustand/useServiceId";
 
 const stats = [
   {
@@ -38,7 +38,7 @@ const stats = [
 export function DashboardStats() {
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
-  const { setServiceId } = useServiceId();
+  const { setBusinessId } = useBusinessId();
 
   const { data } = useQuery<UserProfileResponse>({
     queryKey: ["user-profile"],
@@ -55,8 +55,9 @@ export function DashboardStats() {
       if (!res.ok) throw new Error("Failed to fetch profile");
 
       const data = await res.json();
-
-      setServiceId(data?.data?.businessId?._id || null);
+      console.log(data);
+      console.log(data?.data?.businessId?._id);
+      setBusinessId(data?.data?.businessId?._id || null);
       return data;
     },
 

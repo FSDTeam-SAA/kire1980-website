@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-interface ServiceState {
-  serviceId: string | null;
-  setServiceId: (id: string | null) => void;
+interface BusinessIdState {
+  businessId: string | null;
+  setBusinessId: (id: string | null) => void;
 }
 
-export const useServiceId = create<ServiceState>()(
+export const useBusinessId = create<BusinessIdState>()(
   persist(
     (set) => ({
-      serviceId: null,
-      setServiceId: (id) => set({ serviceId: id }),
+      businessId: null,
+      setBusinessId: (id) => set({ businessId: id }),
     }),
     {
-      name: "service-id-storage",
+      name: "business-id-storage",
     },
   ),
 );

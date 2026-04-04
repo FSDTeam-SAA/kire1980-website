@@ -5,7 +5,6 @@ import React, { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 
 import {
   Select,
@@ -14,23 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
-
-const featureOptions = [
-  { id: "waiting-area", label: "Comfortable Waiting Area" },
-  { id: "free-wifi", label: "Free Wi-Fi" },
-  { id: "locker", label: "Locker / Storage" },
-  { id: "parking", label: "Parking Available" },
-  { id: "drinks", label: "Refreshments / Drinks" },
-  { id: "wheelchair", label: "Wheelchair Accessible" },
-];
+import { useServiceId } from "../../../../../../../zustand/useServiceId";
 
 export default function AddServiceForm() {
-  const { data: session } = useSession();
   const queryClient = useQueryClient();
-
+  const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
+  const { serviceId } = useServiceId();
 
   const [formData, setFormData] = useState({
     serviceName: "",
@@ -48,19 +39,6 @@ export default function AddServiceForm() {
     }));
   };
 
-  const toggleFeature = (featureId: string) => {
-    setFormData((prev) => {
-      const exists = prev.features.includes(featureId);
-
-      return {
-        ...prev,
-        features: exists
-          ? prev.features.filter((f) => f !== featureId)
-          : [...prev.features, featureId],
-      };
-    });
-  };
-
   const addServiceMutation = useMutation({
     mutationFn: async (values: {
       serviceName: string;
@@ -68,8 +46,10 @@ export default function AddServiceForm() {
       serviceDuration: string;
       price: number;
       description: string;
-      isFeatured: string[];
+      businessId: string;
+      isFeatured: boolean;
     }) => {
+      console.log(values);
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/services`,
         {
@@ -111,10 +91,9 @@ export default function AddServiceForm() {
       serviceDuration: formData.duration,
       price: parseFloat(formData.price),
       description: formData.description,
-      isFeatured: formData.features,
+      isFeatured: true,
+      businessId: serviceId || "",
     });
-
-    console.log("Submitted Data:", formData);
   };
 
   return (
@@ -203,27 +182,6 @@ export default function AddServiceForm() {
               value={formData.description}
               onChange={(e) => handleChange("description", e.target.value)}
             />
-          </div>
-
-          {/* Features */}
-
-          <div>
-            <h3 className="text-sm font-bold text-slate-700">Features</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-              {featureOptions.map((feature) => (
-                <div
-                  key={feature.id}
-                  className="flex items-center space-x-3 p-4 border rounded-xl"
-                >
-                  <Checkbox
-                    checked={formData.features.includes(feature.id)}
-                    onCheckedChange={() => toggleFeature(feature.id)}
-                  />
-                  <span className="text-sm">{feature.label}</span>
-                </div>
-              ))}
-            </div>
           </div>
 
           {/* Submit */}

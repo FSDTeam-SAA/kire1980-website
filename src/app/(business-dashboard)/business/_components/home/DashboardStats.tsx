@@ -1,4 +1,8 @@
+"use client";
+import { useQuery } from "@tanstack/react-query";
 import { Users, Calendar, Wallet, Star } from "lucide-react";
+import { useServiceId } from "../../../../../../zustand/useServiceId";
+import { useSession } from "next-auth/react";
 
 const stats = [
   {
@@ -32,6 +36,33 @@ const stats = [
 ];
 
 export function DashboardStats() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken || "";
+  const { setServiceId } = useServiceId();
+
+  const { data } = useQuery<UserProfileResponse>({
+    queryKey: ["user-profile"],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/user/${session?.user?.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch profile");
+
+      const data = await res.json();
+
+      setServiceId(data?.data?.businessId?._id || null);
+      return data;
+    },
+
+    enabled: !!token && !!session?.user?.id,
+  });
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 ">
       {stats.map((stat, i) => (

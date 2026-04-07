@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 const navigation = [
-  { name: "Profile", href: "/user/profile", icon: SendToBack },
+  { name: "Profile", href: "/user", icon: SendToBack },
   { name: "My Bookings", href: "/user/bookings", icon: ShoppingBag },
   { name: "Wish List", href: "/user/wish-list", icon: Heart },
   { name: "Settings", href: "/user/setting", icon: Settings },
@@ -30,22 +30,31 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
-    // NextAuth signOut with redirect to login page
     signOut({ callbackUrl: "/login" });
     setOpen(false);
+  };
+
+  const isActiveRoute = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    if (href === "/user") {
+      return pathname === "/user";
+    }
+    return pathname?.startsWith(href);
   };
 
   return (
     <div className="flex h-screen w-64 flex-col bg-[#FFFFFF] border-r border-gray-200 fixed">
       {/* Logo */}
-      <div className="flex  items-center py-1 justify-center px-6">
+      <div className="flex items-center py-1 justify-center px-6">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/logo.png"
             alt="ABC Nerd Logo"
             width={162}
             height={162}
-            className="h-[120px] w-[120px]  rounded-full object-cover"
+            className="h-[120px] w-[120px] rounded-full object-cover"
           />
         </Link>
       </div>
@@ -53,11 +62,7 @@ export default function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {navigation.map((item) => {
-          // Active logic
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname?.startsWith(item.href);
+          const isActive = isActiveRoute(item.href);
 
           return (
             <Link

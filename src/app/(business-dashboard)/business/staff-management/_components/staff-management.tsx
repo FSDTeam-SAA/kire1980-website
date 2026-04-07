@@ -1,88 +1,37 @@
-import React from "react";
-import { Eye, Trash2, Plus } from "lucide-react";
+"use client";
+import React, { useState } from "react";
+import { Eye, Trash2 } from "lucide-react";
 import Link from "next/link";
-
-const staffData = [
-  {
-    name: "Sarah Jenkins",
-    role: "Senior Stylist",
-    services: ["Haircut", "Styling"],
-    extra: 2,
-    booked: 8,
-  },
-  {
-    name: "Sarah Jenkins",
-    role: "Senior Stylist",
-    services: ["Haircut", "Styling"],
-    extra: 2,
-    booked: 8,
-  },
-  {
-    name: "Michael Brown",
-    role: "Junior Stylist",
-    services: ["Coloring", "Treatment"],
-    extra: 1,
-    booked: 5,
-  },
-  {
-    name: "Emily Clark",
-    role: "Senior Stylist",
-    services: ["Haircut", "Coloring"],
-    extra: 3,
-    booked: 10,
-  },
-  {
-    name: "James Wilson",
-    role: "Junior Stylist",
-    services: ["Shampooing", "Styling"],
-    extra: 1,
-    booked: 4,
-  },
-  {
-    name: "Olivia Martinez",
-    role: "Senior Stylist",
-    services: ["Coloring", "Treatment"],
-    extra: 2,
-    booked: 7,
-  },
-  {
-    name: "David Taylor",
-    role: "Junior Stylist",
-    services: ["Haircut", "Shampooing"],
-    extra: 1,
-    booked: 3,
-  },
-  {
-    name: "Sophia Anderson",
-    role: "Senior Stylist",
-    services: ["Styling", "Haircut"],
-    extra: 2,
-    booked: 9,
-  },
-  {
-    name: "Daniel Thomas",
-    role: "Junior Stylist",
-    services: ["Treatment", "Coloring"],
-    extra: 1,
-    booked: 6,
-  },
-  {
-    name: "Isabella Moore",
-    role: "Senior Stylist",
-    services: ["Styling", "Shampooing"],
-    extra: 3,
-    booked: 12,
-  },
-  {
-    name: "Lucas Jackson",
-    role: "Junior Stylist",
-    services: ["Haircut", "Styling"],
-    extra: 1,
-    booked: 2,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import Image from "next/image";
+import { StaffResponse } from "@/types/staffDataType";
+import { ServiceResponse } from "@/types/serviceDataType";
+import { useSession } from "next-auth/react";
 
 export default function StaffManagement() {
+  const [page, setPage] = useState(1);
+  const limit = 10;
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken || "";
+
+  const { data, isLoading, error } = useQuery<StaffResponse>({
+    queryKey: ["staff", page],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/staff?page=${page}&limit=${limit}`,
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch staff");
+      return res.json();
+    },
+  });
+
+  const staff = data?.data?.data || [];
+  const meta = data?.data?.meta;
+
+  if (isLoading) return <p>Loading...</p>;
+  if (error) return <p>Error loading staff</p>;
+
   return (
     <div className="min-h-screen bg-[#F0F7F7] p-8 font-sans">
       {/* Header */}
@@ -95,96 +44,98 @@ export default function StaffManagement() {
             Manage your team and their schedules.
           </p>
         </div>
+
         <Link href={`/business/staff-management/add-staff`}>
-          <button className="bg-[#00A3A3] hover:bg-[#008B8B] text-white px-6 py-2.5 rounded-lg flex items-center gap-2 transition-colors font-medium">
+          <button className="bg-[#00A3A3] hover:bg-[#008B8B] text-white px-6 py-2.5 rounded-lg">
             Add Staff
           </button>
         </Link>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {[
-          { label: "Total Staff", value: "24" },
-          { label: "Currently On Duty", value: "22" },
-          { label: "Total Booked Today", value: "22" },
-        ].map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white p-6 rounded-xl shadow-sm border border-gray-100"
-          >
-            <p className="text-gray-500 text-sm mb-4">{stat.label}</p>
-            <p className="text-3xl font-bold text-[#333]">{stat.value}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Table Container */}
+      {/* Table */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-white border-b border-gray-100">
+            <thead className="border-b">
               <tr>
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600">
                   Staff Member
                 </th>
+
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Role / Position
+                  Email
                 </th>
+
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600">
                   Assigned Services
                 </th>
+
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Today&apos;s Booked
+                  Status
                 </th>
+
                 <th className="px-6 py-4 text-sm font-semibold text-gray-600">
                   Action
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
-              {staffData.map((staff, idx) => (
-                <tr key={idx} className="hover:bg-gray-50 transition-colors">
+
+            <tbody className="divide-y">
+              {staff.map((member) => (
+                <tr key={member._id}>
+                  {/* Name */}
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-[#D1EAEA] flex items-center justify-center overflow-hidden">
-                        {/* Placeholder for Avatar */}
-                        <div className="bg-[#4EA5A5] w-full h-full opacity-80" />
-                      </div>
-                      <span className="text-sm font-medium text-gray-700">
-                        {staff.name}
+                      <Image
+                        alt="Profile"
+                        width={50}
+                        height={50}
+                        src={member.avatar?.url}
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+
+                      <span className="text-sm font-medium">
+                        {member.firstName} {member.lastName}
                       </span>
                     </div>
                   </td>
+
+                  {/* Email */}
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {staff.role}
+                    {member.email}
                   </td>
+
+                  {/* Services */}
                   <td className="px-6 py-4">
-                    <div className="flex gap-2 items-center">
-                      {staff.services.map((service, sIdx) => (
+                    <div className="flex gap-2 flex-wrap">
+                      {member.serviceIds?.map((service) => (
                         <span
-                          key={sIdx}
-                          className="px-3 py-1 bg-[#F0F9F9] text-[#4EA5A5] text-xs rounded-full border border-[#D1EAEA]"
+                          key={service._id}
+                          className="px-3 py-1 bg-[#F0F9F9] text-[#4EA5A5] text-xs rounded-full border"
                         >
-                          {service}
+                          {service.serviceName}
                         </span>
                       ))}
-                      <span className="text-xs text-[#4EA5A5] font-medium">
-                        +{staff.extra}
-                      </span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-semibold text-gray-700">
-                    {staff.booked}
+
+                  {/* Status */}
+                  <td className="px-6 py-4 text-sm">
+                    {member.isActive ? (
+                      <span className="text-green-600 font-medium">Active</span>
+                    ) : (
+                      <span className="text-red-500">Inactive</span>
+                    )}
                   </td>
+
+                  {/* Action */}
                   <td className="px-6 py-4">
                     <div className="flex gap-4 text-[#4EA5A5]">
-                      <Link href={`/business/staff-management/adfaf`}>
-                        <button className="hover:text-[#008B8B] transition-colors">
-                          <Eye size={18} />
-                        </button>
+                      <Link href={`/business/staff-management/${member._id}`}>
+                        <Eye size={18} />
                       </Link>
-                      <button className="hover:text-red-500 transition-colors">
+
+                      <button className="hover:text-red-500">
                         <Trash2 size={18} />
                       </button>
                     </div>
@@ -193,6 +144,48 @@ export default function StaffManagement() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Pagination */}
+
+        <div className="flex justify-between items-center p-4 border-t">
+          <p className="text-sm text-gray-500">
+            Page {meta?.page} of {meta?.totalPages}
+          </p>
+
+          <div className="flex gap-2">
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(page - 1)}
+              className="px-4 py-2 border rounded disabled:opacity-40"
+            >
+              Prev
+            </button>
+
+            {[...Array(meta?.totalPages || 1)].map((_, i) => {
+              const pageNumber = i + 1;
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setPage(pageNumber)}
+                  className={`px-4 py-2 border rounded ${
+                    page === pageNumber ? "bg-[#00A3A3] text-white" : ""
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              );
+            })}
+
+            <button
+              disabled={page === meta?.totalPages}
+              onClick={() => setPage(page + 1)}
+              className="px-4 py-2 border rounded disabled:opacity-40"
+            >
+              Next
+            </button>
+          </div>
         </div>
       </div>
     </div>

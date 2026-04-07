@@ -7,7 +7,6 @@ import {
   SendToBack,
   Settings,
   ShoppingBag,
-  Heart,
   DollarSign,
   Star,
   Calendar,
@@ -30,7 +29,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 const navigation = [
-  { name: "Dashboard Overview", href: "/", icon: SendToBack },
+  { name: "Dashboard Overview", href: "/business", icon: SendToBack },
   {
     name: "Service Management",
     href: "/business/service-management",
@@ -53,7 +52,7 @@ const navigation = [
   },
   { name: "Reviews & Ratings", href: "/business/review-ratings", icon: Star },
   { name: "Earnings", href: "/business/earnings", icon: DollarSign },
-  { name: "Settings", href: "/user/setting", icon: Settings },
+  { name: "Settings", href: "/business/setting", icon: Settings },
 ];
 
 export default function SidebarBusiness() {
@@ -61,7 +60,6 @@ export default function SidebarBusiness() {
   const [open, setOpen] = useState(false);
 
   const handleLogout = () => {
-    // NextAuth signOut with redirect to login page
     signOut({ callbackUrl: "/login" });
     setOpen(false);
   };
@@ -69,14 +67,14 @@ export default function SidebarBusiness() {
   return (
     <div className="flex h-screen w-64 flex-col bg-[#FFFFFF] border-r border-gray-200 fixed">
       {/* Logo */}
-      <div className="flex  items-center py-1 justify-center px-6">
+      <div className="flex items-center py-1 justify-center px-6">
         <Link href="/" className="flex items-center gap-2">
           <Image
             src="/images/logo.png"
             alt="ABC Nerd Logo"
             width={162}
             height={162}
-            className="h-[120px] w-[120px]  rounded-full object-cover"
+            className="h-[120px] w-[120px] rounded-full object-cover"
           />
         </Link>
       </div>
@@ -84,11 +82,13 @@ export default function SidebarBusiness() {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
         {navigation.map((item) => {
-          // Active logic
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname?.startsWith(item.href);
+          let isActive = false;
+
+          if (item.href === "/business") {
+            isActive = pathname === "/business";
+          } else {
+            isActive = pathname.startsWith(item.href);
+          }
 
           return (
             <Link
@@ -120,6 +120,7 @@ export default function SidebarBusiness() {
               Log Out
             </Button>
           </DialogTrigger>
+
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
               <DialogTitle>Confirm Logout</DialogTitle>
@@ -127,6 +128,7 @@ export default function SidebarBusiness() {
                 Are you sure you want to log out?
               </DialogDescription>
             </DialogHeader>
+
             <DialogFooter className="flex justify-end gap-2">
               <Button
                 className="cursor-pointer"
@@ -135,6 +137,7 @@ export default function SidebarBusiness() {
               >
                 Cancel
               </Button>
+
               <Button
                 className="cursor-pointer"
                 variant="destructive"

@@ -2,38 +2,61 @@
 
 import Image from "next/image";
 import { Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
-const testimonials = [
-  {
-    id: 1,
-    rating: 4,
-    text: "“BOOKERSI completely changed how I manage my salon appointments. My no-show rate dropped by 60% and I'm fully booked every week. Absolute game-changer.”",
-    name: "Sarah Mitchell",
-    role: "Owner, Luxe Hair Studio",
-    image: "/images/image1.jpg",
-    featured: false,
-  },
-  {
-    id: 2,
-    rating: 5,
-    text: "“I found my personal trainer in under 2 minutes. The booking was seamless, the reminders kept me on track, and the whole experience felt premium. I use it every week now.”",
-    name: "James Kowalski",
-    role: "Fitness Enthusiast, NYC",
-    image: "/images/image5.jpg",
-    featured: true,
-  },
-  {
-    id: 3,
-    rating: 4,
-    text: "“Our wellness center grew 40% in 3 months after listing on BOOKERSI. The analytics dashboard is incredibly insightful and the client management tools save us hours every week.”",
-    name: "Priya Rajan",
-    role: "Director, Zen Garden Spa",
-    image: "/images/imag-23.jpg",
-    featured: false,
-  },
-];
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+
+/* -------------------- TYPES -------------------- */
+
+type User = {
+  _id: string;
+  email: string;
+};
+
+type Service = {
+  _id: string;
+  serviceName: string;
+};
+
+type Review = {
+  _id: string;
+  rating: number;
+  review: string;
+  userId: User;
+  serviceId: Service;
+};
+
+/* -------------------- API CALL -------------------- */
+
+const fetchReviews = async (): Promise<Review[]> => {
+  const res = await fetch("http://localhost:5000/reviews");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch reviews");
+  }
+
+  const data = await res.json();
+  return data?.data?.data || [];
+};
+
+/* -------------------- COMPONENT -------------------- */
 
 export default function RealPeople() {
+  const { data: reviews = [], isLoading } = useQuery<Review[]>({
+    queryKey: ["reviews"],
+    queryFn: fetchReviews,
+  });
+
+  if (isLoading) {
+    return <div className="text-center py-20">Loading reviews...</div>;
+  }
+
   return (
     <section className="bg-[#f8fbfa] py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -48,55 +71,70 @@ export default function RealPeople() {
           </p>
         </div>
 
-        {/* Cards */}
-        <div className="mt-12 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {testimonials.map((item) => (
-            <div
-              key={item.id}
-              className={`rounded-2xl border border-[#dce6e4] p-6 shadow-sm ${
-                item.featured ? "bg-[#eef6f5]" : "bg-white"
-              }`}
-            >
-              {/* Stars */}
-              <div className="flex items-center gap-1">
-                {[...Array(5)].map((_, index) => (
-                  <Star
-                    key={index}
-                    className={`h-4 w-4 ${
-                      index < item.rating
-                        ? "fill-[#f4b400] text-[#f4b400]"
-                        : "fill-[#d1d5db] text-[#d1d5db]"
-                    }`}
-                  />
-                ))}
-              </div>
+        {/* Carousel */}
+        <div className="mt-12">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent>
+              {reviews.map((item) => (
+                <CarouselItem
+                  key={item._id}
+                  className="md:basis-1/2 lg:basis-1/3"
+                >
+                  <div className="rounded-2xl border border-[#dce6e4] bg-white p-6 shadow-sm">
+                    {/* Stars */}
+                    <div className="flex items-center gap-1">
+                      {[...Array(5)].map((_, index) => (
+                        <Star
+                          key={index}
+                          className={`h-4 w-4 ${
+                            index < item.rating
+                              ? "fill-[#f4b400] text-[#f4b400]"
+                              : "fill-[#d1d5db] text-[#d1d5db]"
+                          }`}
+                        />
+                      ))}
+                    </div>
 
-              {/* Text */}
-              <p className="mt-5 text-sm leading-6 text-[#374151] md:text-base">
-                {item.text}
-              </p>
+                    {/* Review Text */}
+                    <p className="mt-5 text-sm leading-6 text-[#374151] md:text-base">
+                      {item.review}
+                    </p>
 
-              {/* User */}
-              <div className="mt-6 flex items-center gap-3">
-                <div className="h-12 w-12 overflow-hidden rounded-full">
-                  <Image
-                    src={item.image}
-                    alt={item.name}
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
+                    {/* User */}
+                    <div className="mt-6 flex items-center gap-3">
+                      <div className="h-12 w-12 overflow-hidden rounded-full">
+                        <Image
+                          src="/images/image1.jpg"
+                          alt="user"
+                          width={48}
+                          height={48}
+                          className="h-full w-full object-cover"
+                        />
+                      </div>
 
-                <div>
-                  <h3 className="text-base font-semibold text-[#1f2937]">
-                    {item.name}
-                  </h3>
-                  <p className="text-sm text-[#6b7280]">{item.role}</p>
-                </div>
-              </div>
-            </div>
-          ))}
+                      <div>
+                        <h3 className="text-base font-semibold text-[#1f2937]">
+                          {item.userId?.email}
+                        </h3>
+                        <p className="text-sm text-[#6b7280]">
+                          {item.serviceId?.serviceName}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
         </div>
       </div>
     </section>

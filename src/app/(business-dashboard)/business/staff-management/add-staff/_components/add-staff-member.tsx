@@ -1,184 +1,292 @@
-import { Copy, Trash2, ChevronDown } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ServiceResponse } from "@/types/serviceDataType";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
+import { useBusinessId } from "../../../../../../../zustand/useServiceId";
+import { toast } from "sonner";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function AddStaffMember() {
-  const services = [
-    { id: "haircut", label: "Haircut & Styling", checked: true },
-    { id: "beard", label: "Beard Trim", checked: true },
-    { id: "coloring", label: "Hair Coloring", checked: false },
-    { id: "conditioning", label: "Deep Conditioning", checked: false },
-    { id: "massage", label: "Scalp Massage", checked: false },
-    { id: "shave", label: "Hot Towel Shave", checked: true },
-  ];
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken || "";
+  const { businessId } = useBusinessId();
 
-  const days = [
-    {
-      name: "Monday",
-      status: "Available",
-      from: "09:00 AM",
-      to: "05:00 PM",
-      break: "+ Add break",
+  const [image, setImage] = useState<File | null>(null);
+
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+  });
+
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+
+  const [schedule, setSchedule] = useState([
+    { day: "monday", from: "09:00", to: "17:00", isAvailable: true },
+    { day: "tuesday", from: "09:00", to: "17:00", isAvailable: true },
+    { day: "wednesday", from: "09:00", to: "17:00", isAvailable: true },
+    { day: "thursday", from: "09:00", to: "17:00", isAvailable: true },
+    { day: "friday", from: "09:00", to: "17:00", isAvailable: true },
+    { day: "saturday", from: "09:00", to: "17:00", isAvailable: false },
+    { day: "sunday", from: "09:00", to: "17:00", isAvailable: false },
+  ]);
+
+  const { data: services } = useQuery<ServiceResponse>({
+    queryKey: ["services"],
+    queryFn: async () => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/services/business/${businessId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch services");
+
+      return res.json();
     },
-    {
-      name: "Tuesday",
-      status: "Available",
-      from: "09:00 AM",
-      to: "05:00 PM",
-      break: "Lunch Break: 12:00 - 13:00",
+  });
+
+  const servicesData = services?.data || [];
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setImage(e.target.files[0]);
+    }
+  };
+
+  const handleServiceChange = (id: string) => {
+    setSelectedServices((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  };
+
+  const updateSchedule = (
+    index: number,
+    field: "from" | "to" | "isAvailable",
+    value: string | boolean,
+  ) => {
+    const updated = [...schedule];
+    updated[index] = { ...updated[index], [field]: value };
+    setSchedule(updated);
+  };
+
+  const { mutate, isPending } = useMutation({
+    mutationKey: ["add-staff"],
+    mutationFn: async () => {
+      const form = new FormData();
+
+      form.append("firstName", formData.firstName);
+      form.append("lastName", formData.lastName);
+      form.append("email", formData.email);
+      form.append("phoneNumber", formData.phoneNumber);
+      form.append("businessId", businessId || "");
+
+      selectedServices.forEach((id) => {
+        form.append("serviceIds[]", id);
+      });
+
+      form.append("schedule", JSON.stringify(schedule));
+
+      if (image) {
+        form.append("avatar", image);
+      }
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/staff`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: form,
+      });
+
+      return res.json();
     },
-    { name: "Wednesday", status: "Unavailable", from: "", to: "", break: "" },
-    {
-      name: "Thursday",
-      status: "Available",
-      from: "09:00 AM",
-      to: "05:00 PM",
-      break: "+ Add break",
+
+    onSuccess: (data) => {
+      if (!data?.success) {
+        toast.error(data?.message || "Something went wrong");
+        return;
+      }
+
+      toast.success("Staff added successfully");
     },
-    {
-      name: "Friday",
-      status: "Available",
-      from: "09:00 AM",
-      to: "08:00 PM",
-      break: "Evening shift included",
+
+    onError: () => {
+      toast.error("Something went wrong");
     },
-  ];
+  });
 
   return (
-    <div className="min-h-screen bg-[#F0F7F7] p-8 font-sans">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-8">
+    <div className="min-h-screen bg-[#F0F7F7] p-8">
+      {/* HEADER */}
+
+      <div className="flex justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-[#1A2D2D]">
-            Add New Staff Member
-          </h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Complete the details below to onboard a new team member and set
-            their working hours.
-          </p>
+          <h1 className="text-2xl font-bold">Add New Staff Member</h1>
         </div>
-        <button className="bg-[#00A3A3] hover:bg-[#008B8B] text-white px-8 py-2.5 rounded-lg font-medium transition-colors">
-          Save Member
-        </button>
+
+        <Button
+          disabled={isPending}
+          onClick={() => mutate()}
+          className="bg-[#00A3A3] text-white px-6 py-2 rounded-lg"
+        >
+          {isPending ? "Saving..." : "Save Member"}
+        </Button>
       </div>
 
-      <div className="space-y-6">
-        {/* Personal Information */}
-        <section className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-6">
-            Personal Information
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              { label: "First Name", placeholder: "e.g. Michael" },
-              { label: "First Name", placeholder: "e.g. Scott" }, // Design shows First Name twice
-              {
-                label: "Email Address",
-                placeholder: "michael.scott@company.com",
-              },
-              { label: "Phone Number", placeholder: "+1 (555) 000-0000" },
-            ].map((input, i) => (
-              <div key={i}>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  {input.label}
-                </label>
-                <input
-                  type="text"
-                  placeholder={input.placeholder}
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#00A3A3]/20 focus:border-[#00A3A3] transition-all text-sm placeholder:text-gray-300"
+      {/* PERSONAL INFO */}
+
+      <section className="bg-white p-8 rounded-xl border">
+        <h2 className="font-semibold mb-6">Personal Information</h2>
+
+        {/* IMAGE */}
+
+        <div className="mb-6">
+          <label className="cursor-pointer">
+            <div className="w-24 h-24 rounded-full border-2 border-dashed flex items-center justify-center overflow-hidden">
+              {image ? (
+                <Image
+                  width={100}
+                  height={100}
+                  alt="staff"
+                  src={URL.createObjectURL(image)}
+                  className="w-full h-full object-cover"
                 />
-              </div>
-            ))}
-          </div>
-        </section>
+              ) : (
+                <span className="text-gray-400 text-sm">Upload</span>
+              )}
+            </div>
 
-        {/* Assigned Services */}
-        <section className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">
-            Assigned Services
-          </h2>
-          <p className="text-gray-400 text-sm mb-6">
-            Select the services this staff member is qualified to provide.
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {services.map((service) => (
-              <label
-                key={service.id}
-                className="flex items-center gap-3 p-4 rounded-xl border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+            <input
+              type="file"
+              className="hidden"
+              onChange={handleImageChange}
+            />
+          </label>
+        </div>
+
+        {/* INPUTS */}
+
+        <div className="grid md:grid-cols-2 gap-6">
+          <Input
+            placeholder="First Name"
+            onChange={(e) =>
+              setFormData({ ...formData, firstName: e.target.value })
+            }
+          />
+
+          <Input
+            placeholder="Last Name"
+            onChange={(e) =>
+              setFormData({ ...formData, lastName: e.target.value })
+            }
+          />
+
+          <Input
+            placeholder="Email"
+            type="email"
+            onChange={(e) =>
+              setFormData({ ...formData, email: e.target.value })
+            }
+          />
+
+          <Input
+            placeholder="Phone"
+            onChange={(e) =>
+              setFormData({ ...formData, phoneNumber: e.target.value })
+            }
+          />
+        </div>
+      </section>
+
+      {/* SERVICES */}
+
+      <section className="bg-white p-8 rounded-xl border mt-6">
+        <h2 className="font-semibold mb-6">Assigned Services</h2>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {servicesData.map((service) => (
+            <label
+              key={service._id}
+              className="flex items-center gap-3 border p-4 rounded-lg"
+            >
+              <Checkbox
+                onCheckedChange={() => handleServiceChange(service._id)}
+              />
+
+              <span>{service.serviceName}</span>
+            </label>
+          ))}
+        </div>
+      </section>
+
+      {/* WEEKLY AVAILABILITY */}
+
+      <section className="bg-white p-8 rounded-xl border mt-6">
+        <h2 className="font-semibold mb-6">Weekly Availability</h2>
+
+        <div className="space-y-4">
+          {schedule.map((day, i) => (
+            <div key={day.day} className="flex items-center gap-4">
+              <span className="w-24 capitalize font-medium">{day.day}</span>
+
+              <Select
+                value={day.isAvailable ? "available" : "off"}
+                onValueChange={(value) =>
+                  updateSchedule(i, "isAvailable", value === "available")
+                }
               >
-                <input
-                  type="checkbox"
-                  defaultChecked={service.checked}
-                  className="w-5 h-5 rounded border-gray-300 text-[#00A3A3] focus:ring-[#00A3A3]"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  {service.label}
-                </span>
-              </label>
-            ))}
-          </div>
-        </section>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
 
-        {/* Weekly Availability */}
-        <section className="bg-white rounded-xl p-8 border border-gray-100 shadow-sm">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Weekly Availability
-            </h2>
-            <button className="text-[#00A3A3] text-sm font-bold flex items-center gap-2 hover:underline">
-              <Copy size={16} /> Apply to all
-            </button>
-          </div>
+                <SelectContent>
+                  <SelectItem value="available">Available</SelectItem>
+                  <SelectItem value="off">Off Day</SelectItem>
+                </SelectContent>
+              </Select>
 
-          <div className="space-y-4">
-            {days.map((day, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 py-2 border-b border-gray-50 last:border-0"
-              >
-                <span className="w-24 text-sm font-bold text-gray-700">
-                  {day.name}
-                </span>
+              {day.isAvailable ? (
+                <>
+                  <Input
+                    type="time"
+                    value={day.from}
+                    onChange={(e) => updateSchedule(i, "from", e.target.value)}
+                    className="w-[140px]"
+                  />
 
-                {/* Status Dropdown */}
-                <div className="relative w-36">
-                  <div className="flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600 cursor-pointer">
-                    {day.status} <ChevronDown size={14} />
-                  </div>
-                </div>
+                  <span>to</span>
 
-                {/* Time Pickers */}
-                {day.status === "Available" ? (
-                  <div className="flex items-center gap-3">
-                    <div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600">
-                      {day.from}
-                    </div>
-                    <span className="text-gray-300 text-xs">to</span>
-                    <div className="px-4 py-2 bg-gray-50 rounded-lg border border-gray-100 text-sm text-gray-600">
-                      {day.to}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex-1 text-center text-sm text-gray-400">
-                    Out of office
-                  </div>
-                )}
-
-                {/* Break Info */}
-                <div className="flex-1 flex justify-center">
-                  <span
-                    className={`text-xs font-medium cursor-pointer ${day.break.includes("+") ? "text-gray-400 hover:text-[#00A3A3]" : "text-gray-400 bg-gray-50 px-3 py-1 rounded"}`}
-                  >
-                    {day.break}
-                  </span>
-                </div>
-
-                <button className="text-gray-300 hover:text-red-500 transition-colors">
-                  <Trash2 size={18} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
+                  <Input
+                    type="time"
+                    value={day.to}
+                    onChange={(e) => updateSchedule(i, "to", e.target.value)}
+                    className="w-[140px]"
+                  />
+                </>
+              ) : (
+                <span className="text-gray-400">Not Available</span>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

@@ -2,47 +2,41 @@
 
 import Image from "next/image";
 import { ArrowRight, Star, ChevronRight } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 
-const topRatedData = [
-  {
-    id: 1,
-    category: "Beauty",
-    title: "Luxe Hair Studio",
-    description: "Premium hair styling and coloring services in downtown.",
-    price: "$45",
-    rating: "4.9",
-    image: "/images/Beauty.png",
-  },
-  {
-    id: 2,
-    category: "Fitness",
-    title: "Luxe Hair Studio",
-    description: "24/7 access gym with state-of-the-art equipment.",
-    price: "$45",
-    rating: "4.9",
-    image: "/images/Salon.png",
-  },
-  {
-    id: 3,
-    category: "Wellness",
-    title: "Luxe Hair Studio",
-    description: "Relaxing massages and aromatherapy sessions.",
-    price: "$45",
-    rating: "4.9",
-    image: "/images/Salon1.png",
-  },
-  {
-    id: 4,
-    category: "Fitness",
-    title: "Luxe Hair Studio",
-    description: "Vinyasa, Hatha, and Yin yoga classes for all levels.",
-    price: "$45",
-    rating: "4.9",
-    image: "/images/Salon2.png",
-  },
-];
+interface Gallery {
+  url: string;
+}
+
+interface Business {
+  _id: string;
+  businessName: string;
+  businessCategory: string;
+  description: string;
+  gallery: Gallery[];
+}
+
+const fetchBusinesses = async (): Promise<Business[]> => {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/businesses`);
+  const data = await res.json();
+  return data.data;
+};
 
 export default function TopRatedNearYou() {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["businesses"],
+    queryFn: fetchBusinesses,
+  });
+
+  if (isLoading) {
+    return <p className="text-center py-10">Loading...</p>;
+  }
+
+  if (error) {
+    return <p className="text-center py-10">Something went wrong</p>;
+  }
+
   return (
     <section className="bg-[#f8fbfa] py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -65,25 +59,25 @@ export default function TopRatedNearYou() {
 
         {/* Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-          {topRatedData.map((item) => (
+          {data?.slice(0, 8).map((item) => (
             <div
-              key={item.id}
+              key={item._id}
               className="overflow-hidden rounded-2xl border border-[#dce6e4] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md"
             >
               {/* Image */}
               <div className="relative h-[220px] w-full overflow-hidden">
                 <Image
-                  src={item.image}
-                  alt={item.title}
+                  src={item.gallery?.[0]?.url || "/images/Beauty.png"}
+                  alt={item.businessName}
                   fill
                   className="object-cover"
                 />
 
-                {/* Rating */}
+                {/* Rating (static because API has no rating) */}
                 <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 shadow-sm">
                   <Star className="h-3.5 w-3.5 fill-[#f4b400] text-[#f4b400]" />
                   <span className="text-xs font-semibold text-[#1f2937]">
-                    {item.rating}
+                    4.8
                   </span>
                 </div>
               </div>
@@ -91,11 +85,11 @@ export default function TopRatedNearYou() {
               {/* Content */}
               <div className="p-4">
                 <p className="text-sm font-medium text-[#ff5a7a]">
-                  {item.category}
+                  {item.businessCategory}
                 </p>
 
                 <h3 className="mt-1 text-2xl font-semibold text-[#1f2937]">
-                  {item.title}
+                  {item.businessName}
                 </h3>
 
                 <p className="mt-2 min-h-[52px] text-sm leading-6 text-[#6b7280] md:text-base">
@@ -103,14 +97,12 @@ export default function TopRatedNearYou() {
                 </p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-[#e7efee] pt-4">
-                  <p className="text-3xl font-medium text-[#6b7280]">
-                    From {item.price}
-                  </p>
-
-                  <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a]">
-                    Book
-                    <ChevronRight className="h-4 w-4" />
-                  </button>
+                  <Link href={`/`}>
+                    <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a]">
+                      Book
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </Link>
                 </div>
               </div>
             </div>

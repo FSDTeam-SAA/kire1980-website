@@ -52,11 +52,10 @@ const getStartOfWeek = (date: Date) => {
 };
 
 export default function BookingCalendar() {
-  // আপনার API রেসপন্স ২০শে মার্চ ২০২৬ এর, তাই ক্যালেন্ডার সেখানে সেট করা
   const [currentDate, setCurrentDate] = useState(new Date("2026-03-20"));
   const session = useSession();
   const token = session?.data?.user?.accessToken;
-
+  console.log(session);
   const { data, isLoading, error } = useQuery({
     queryKey: ["bookings-calendar"],
     queryFn: () => fetchBookings(token as string),
@@ -65,7 +64,6 @@ export default function BookingCalendar() {
 
   const allBookings = useMemo(() => data?.data?.data || [], [data]);
 
-  // --- সব টাইম স্লট (সকাল ৬টা থেকে রাত ১০টা) ---
   const timeSlots = useMemo(() => {
     const slots = [];
     for (let hour = 6; hour <= 22; hour++) {

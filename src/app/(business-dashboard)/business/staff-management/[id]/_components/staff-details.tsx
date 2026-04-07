@@ -1,5 +1,6 @@
 import React from "react";
 import { Mail, Phone, MapPin, UserCheck, Calendar, Wallet } from "lucide-react";
+import Image from "next/image";
 
 const bookings = [
   {
@@ -53,13 +54,15 @@ const schedule = [
 export default function StaffDetails() {
   return (
     <div className="min-h-screen bg-[#F0F7F7] p-8 font-sans">
-      <h1 className="text-2xl font-bold text-[#1A2D2D] mb-6">Staff Details</h1>
+      <h1 className="text-2xl font-bold text-[#1A2D2D] mb-6">Staff Details </h1>
 
       {/* Profile Header Card */}
       <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex justify-between items-center mb-6">
         <div className="flex items-center gap-6">
           <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-gray-100">
-            <img
+            <Image
+              width={100}
+              height={100}
               src="/api/placeholder/80/80"
               alt="Profile"
               className="w-full h-full object-cover"

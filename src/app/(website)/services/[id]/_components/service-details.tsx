@@ -12,29 +12,65 @@ import {
   Share2,
   Heart,
   Search,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import Link from "next/link";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { Business, Service, Staff } from "@/types/businessDetailsType";
 import { ServiceDetailsSkeleton } from "./service-details-skeleton";
+import { useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 
 interface ServiceItemProps {
   service: Service;
-  active?: boolean;
+  isSelected?: boolean;
   onSelect?: () => void;
+  onUnselect?: () => void;
   staffList?: Staff[];
+  selectedStaff?: Staff | null;
+  onStaffSelect?: (staff: Staff | null) => void;
+}
+
+interface BookingItem {
+  service: Service;
+  staff: Staff | null;
+}
+
+interface BookingPayload {
+  services: {
+    serviceId: string;
+    dateAndTime: string;
+    selectedProvider: string;
+  }[];
+  businessId: string;
+  notes: string;
 }
 
 const ServiceDetails = () => {
-  const [selectedService, setSelectedService] = useState<Service | null>(null);
-  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [selectedServices, setSelectedServices] = useState<
+    Map<string, BookingItem>
+  >(new Map());
+  const [globalDate, setGlobalDate] = useState<Date | undefined>(undefined);
+  const [globalTimeSlot, setGlobalTimeSlot] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isTimeSlotOpen, setIsTimeSlotOpen] = useState(false);
+  const [notes, setNotes] = useState("");
+  const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const { id } = useParams();
+  const session = useSession();
+  const token = session?.data?.user?.accessToken;
 
   const containerClasses = "container mx-auto";
 
@@ -77,6 +113,43 @@ const ServiceDetails = () => {
     enabled: !!id,
   });
 
+  // Booking mutation
+  const bookingMutation = useMutation({
+    mutationFn: async (bookingData: BookingPayload) => {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(bookingData),
+        },
+      );
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Booking failed");
+      return data;
+    },
+    onSuccess: () => {
+      toast.success("Booking Confirmed!", {
+        description: "Your appointments have been successfully booked.",
+        duration: 5000,
+      });
+      setIsBookingModalOpen(false);
+      setSelectedServices(new Map());
+      setGlobalDate(undefined);
+      setGlobalTimeSlot("");
+      setNotes("");
+    },
+    onError: (error: Error) => {
+      toast.error("Booking Failed", {
+        description: error.message,
+        duration: 5000,
+      });
+    },
+  });
+
   const business: Business | undefined = businessData?.data;
   const businessServices: Service[] = servicesData?.data || [];
   const businessStaffs: Staff[] = staffsData?.data?.data || [];
@@ -95,8 +168,138 @@ const ServiceDetails = () => {
     );
   };
 
-  // Get selected service details
-  const selectedServiceDetails = selectedService || businessServices[0];
+  // Handle service selection
+  const handleServiceSelect = (service: Service) => {
+    setSelectedServices((prev) => {
+      const newMap = new Map(prev);
+      newMap.set(service._id, { service, staff: null });
+      return newMap;
+    });
+  };
+
+  // Handle service unselection
+  const handleServiceUnselect = (serviceId: string) => {
+    setSelectedServices((prev) => {
+      const newMap = new Map(prev);
+      newMap.delete(serviceId);
+      return newMap;
+    });
+  };
+
+  // Handle staff selection for a service
+  const handleStaffSelect = (serviceId: string, staff: Staff | null) => {
+    setSelectedServices((prev) => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(serviceId);
+      if (existing) {
+        newMap.set(serviceId, { ...existing, staff });
+      }
+      return newMap;
+    });
+  };
+
+  // Calculate total price
+  const totalPrice = Array.from(selectedServices.values()).reduce(
+    (sum, item) => sum + item.service.price,
+    0,
+  );
+
+  // Generate time slots (9 AM to 8 PM, 30-minute intervals)
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 20; hour++) {
+      const time = `${hour.toString().padStart(2, "0")}:00`;
+      slots.push(time);
+      if (hour !== 20) {
+        slots.push(`${hour.toString().padStart(2, "0")}:30`);
+      }
+    }
+    return slots;
+  };
+
+  const timeSlots = generateTimeSlots();
+
+  // Handle date selection
+  const handleDateSelect = (date: Date | undefined) => {
+    if (selectedServices.size === 0) {
+      toast.error("No Services Selected", {
+        description: "Please select at least one service first.",
+      });
+      return;
+    }
+    setGlobalDate(date);
+    if (date) {
+      setIsTimeSlotOpen(true);
+    }
+  };
+
+  // Handle confirm booking
+  const handleConfirmBooking = () => {
+    if (!globalDate) {
+      toast.error("Date Required", {
+        description: "Please select a date for your booking.",
+      });
+      return;
+    }
+    if (!globalTimeSlot) {
+      toast.error("Time Slot Required", {
+        description: "Please select a time slot for your booking.",
+      });
+      return;
+    }
+    if (selectedServices.size === 0) {
+      toast.error("No Services Selected", {
+        description: "Please select at least one service to book.",
+      });
+      return;
+    }
+
+    // Check if all selected services have staff assigned
+    const missingStaff = Array.from(selectedServices.values()).some(
+      (item) => !item.staff,
+    );
+    if (missingStaff) {
+      toast.error("Staff Required", {
+        description: "Please select a professional for each service.",
+      });
+      return;
+    }
+
+    setIsBookingModalOpen(true);
+  };
+
+  // Submit booking with new payload structure
+  const submitBooking = async () => {
+    const dateTime = new Date(globalDate!);
+    const [hours, minutes] = globalTimeSlot.split(":");
+    dateTime.setHours(parseInt(hours), parseInt(minutes), 0);
+
+    // Validate that the selected date and time is in the future
+    const now = new Date();
+    if (dateTime <= now) {
+      toast.error("Invalid Date & Time", {
+        description: "Please select a future date and time for your booking.",
+      });
+      return;
+    }
+
+    const isoDateTime = dateTime.toISOString();
+
+    // Prepare services array for the new payload structure
+    const servicesArray = Array.from(selectedServices.values()).map((item) => ({
+      serviceId: item.service._id,
+      dateAndTime: isoDateTime,
+      selectedProvider: item.staff!._id,
+    }));
+
+    const payload: BookingPayload = {
+      services: servicesArray,
+      businessId: business!._id,
+      notes: notes,
+    };
+
+    await bookingMutation.mutateAsync(payload);
+  };
 
   // Get today's opening hours
   const getTodayHours = () => {
@@ -109,10 +312,15 @@ const ServiceDetails = () => {
 
   const todayHours = getTodayHours();
   const isOpenNow = todayHours?.isOpen || false;
-
-  // Calculate average rating from reviews
   const averageRating = business?.averageRating || 0;
   const totalReviews = business?.totalReviews || 0;
+
+  // Disable today and all previous dates - only future dates allowed
+  const disabledDays = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date <= today;
+  };
 
   if (isLoading) {
     return <ServiceDetailsSkeleton />;
@@ -134,7 +342,6 @@ const ServiceDetails = () => {
   }
 
   const coverImage = business.gallery?.[0]?.url || "/cover.jpg";
-
   const uniqueStaff = businessStaffs;
 
   return (
@@ -186,11 +393,16 @@ const ServiceDetails = () => {
             <Button variant="outline" size="icon" className="rounded-full">
               <Heart size={18} />
             </Button>
-            <Link href="#booking-continue">
-              <Button className="bg-[#0096a1] hover:bg-[#007a83] text-white px-8 cursor-pointer">
-                Book appointment
-              </Button>
-            </Link>
+            <Button
+              onClick={() => {
+                document
+                  .getElementById("services")
+                  ?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="bg-[#0096a1] hover:bg-[#007a83] text-white px-8 cursor-pointer"
+            >
+              Book appointment
+            </Button>
           </div>
         </div>
 
@@ -199,7 +411,7 @@ const ServiceDetails = () => {
           {/* LEFT: Services & Details */}
           <div className="lg:col-span-8 space-y-12">
             {/* Services Header */}
-            <section>
+            <section id="services">
               <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
                 <h2 className="text-2xl font-bold">Services</h2>
                 <div className="relative">
@@ -228,9 +440,16 @@ const ServiceDetails = () => {
                     <ServiceItem
                       key={service._id}
                       service={service}
-                      active={selectedServiceDetails?._id === service._id}
-                      onSelect={() => setSelectedService(service)}
+                      isSelected={selectedServices.has(service._id)}
+                      onSelect={() => handleServiceSelect(service)}
+                      onUnselect={() => handleServiceUnselect(service._id)}
                       staffList={getStaffForService(service._id)}
+                      selectedStaff={
+                        selectedServices.get(service._id)?.staff || null
+                      }
+                      onStaffSelect={(staff) =>
+                        handleStaffSelect(service._id, staff)
+                      }
                     />
                   ))
                 )}
@@ -373,28 +592,53 @@ const ServiceDetails = () => {
             <div className="sticky top-6 bg-white border rounded-xl p-6 shadow-sm space-y-6">
               <h3 className="font-bold text-xl">Your Booking</h3>
 
-              <div className="space-y-4">
-                <div className="flex justify-between text-sm">
-                  <div className="flex flex-col">
-                    <span className="font-semibold">
-                      {selectedServiceDetails?.serviceName ||
-                        "Select a service"}
-                    </span>
-                    <span className="text-xs text-slate-400 underline underline-offset-4 cursor-pointer">
-                      Choose professional
-                    </span>
-                  </div>
-                  <span className="font-bold">
-                    ${selectedServiceDetails?.price || 0}
-                  </span>
-                </div>
-                <hr />
-                <div className="flex justify-between text-lg font-bold">
-                  <span>Total</span>
-                  <span className="text-[#0096a1]">
-                    ${selectedServiceDetails?.price || 0}
-                  </span>
-                </div>
+              <div className="space-y-4 max-h-96 overflow-y-auto">
+                {selectedServices.size === 0 ? (
+                  <p className="text-sm text-slate-400 text-center py-4">
+                    No services selected
+                  </p>
+                ) : (
+                  Array.from(selectedServices.values()).map((item) => (
+                    <div
+                      key={item.service._id}
+                      className="flex justify-between items-start text-sm border-b pb-3"
+                    >
+                      <div className="flex-1">
+                        <div className="flex justify-between">
+                          <span className="font-semibold">
+                            {item.service.serviceName}
+                          </span>
+                          <button
+                            onClick={() =>
+                              handleServiceUnselect(item.service._id)
+                            }
+                            className="text-red-500 hover:text-red-700 ml-2"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                        <span className="text-xs text-slate-400 block">
+                          {item.staff
+                            ? `${item.staff.firstName} ${item.staff.lastName}`
+                            : "No professional selected"}
+                        </span>
+                        <span className="text-xs text-slate-400 block">
+                          {item.service.serviceDuration}
+                        </span>
+                      </div>
+                      <span className="font-bold">${item.service.price}</span>
+                    </div>
+                  ))
+                )}
+                {selectedServices.size > 0 && (
+                  <>
+                    <hr />
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-[#0096a1]">${totalPrice}</span>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -404,17 +648,31 @@ const ServiceDetails = () => {
                 <div className="border rounded-lg p-2 flex justify-center bg-white">
                   <Calendar
                     mode="single"
-                    selected={date}
-                    onSelect={setDate}
+                    selected={globalDate}
+                    onSelect={handleDateSelect}
                     className="w-full"
+                    disabled={disabledDays}
+                    modifiers={{
+                      selected: (date) =>
+                        globalDate?.toDateString() === date.toDateString(),
+                    }}
+                    modifiersClassNames={{
+                      selected: "bg-[#0096a1] text-white hover:bg-[#007a83]",
+                    }}
                   />
                 </div>
+                {globalDate && globalTimeSlot && (
+                  <p className="text-xs text-slate-600 text-center">
+                    Selected: {globalDate.toLocaleDateString()} at{" "}
+                    {globalTimeSlot}
+                  </p>
+                )}
                 <Button
-                  id="booking-continue"
+                  onClick={handleConfirmBooking}
                   className="w-full bg-[#0096a1] hover:bg-[#007a83] py-6 text-md font-bold text-white cursor-pointer"
-                  disabled={!selectedServiceDetails}
+                  disabled={selectedServices.size === 0}
                 >
-                  Continue
+                  Confirm Booking
                 </Button>
               </div>
             </div>
@@ -456,6 +714,110 @@ const ServiceDetails = () => {
           </div>
         </section>
       </div>
+
+      {/* Time Slot Selection Dialog */}
+      <Dialog open={isTimeSlotOpen} onOpenChange={setIsTimeSlotOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Select Time Slot</DialogTitle>
+            <p className="text-sm text-slate-500 mt-2">
+              Selected date: {globalDate?.toLocaleDateString()}
+            </p>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Available Time Slots
+              </label>
+              <div className="grid grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                {timeSlots.map((slot) => (
+                  <button
+                    key={slot}
+                    onClick={() => {
+                      setGlobalTimeSlot(slot);
+                      setIsTimeSlotOpen(false);
+                    }}
+                    className={`p-2 text-sm rounded-lg border transition-colors ${
+                      globalTimeSlot === slot
+                        ? "bg-[#0096a1] text-white border-[#0096a1]"
+                        : "hover:border-[#0096a1] hover:bg-[#0096a1]/5"
+                    }`}
+                  >
+                    {slot}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTimeSlotOpen(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Booking Confirmation Dialog */}
+      <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Your Booking</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h4 className="font-semibold">Services:</h4>
+              {Array.from(selectedServices.values()).map((item) => (
+                <div key={item.service._id} className="text-sm space-y-1">
+                  <div className="flex justify-between">
+                    <span>{item.service.serviceName}</span>
+                    <span>${item.service.price}</span>
+                  </div>
+                  <div className="text-xs text-slate-500 pl-2">
+                    Professional: {item.staff?.firstName} {item.staff?.lastName}
+                  </div>
+                </div>
+              ))}
+              <div className="border-t pt-2 font-bold flex justify-between">
+                <span>Total</span>
+                <span>${totalPrice}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-semibold">Date & Time:</h4>
+              <p className="text-sm">
+                {globalDate?.toLocaleDateString()} at {globalTimeSlot}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="font-semibold">
+                Additional Notes (Optional):
+              </label>
+              <Textarea
+                placeholder="Any special requests or notes..."
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsBookingModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={submitBooking}
+              disabled={bookingMutation.isPending}
+              className="bg-[#0096a1] hover:bg-[#007a83] text-white cursor-pointer"
+            >
+              {bookingMutation.isPending ? "Booking..." : "Confirm Booking"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
@@ -463,21 +825,31 @@ const ServiceDetails = () => {
 // --- Service Item Sub-component ---
 const ServiceItem: React.FC<ServiceItemProps> = ({
   service,
-  active = false,
+  isSelected = false,
   onSelect,
+  onUnselect,
   staffList = [],
+  selectedStaff,
+  onStaffSelect,
 }) => {
-  const [isOpen, setIsOpen] = useState(active);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleSelect = () => {
-    setIsOpen(!isOpen);
-    onSelect?.();
+    if (isSelected) {
+      onUnselect?.();
+      setIsOpen(false);
+    } else {
+      onSelect?.();
+      setIsOpen(true);
+    }
   };
 
   return (
     <div
       className={`border rounded-xl bg-white overflow-hidden transition-all ${
-        isOpen ? "ring-1 ring-[#0096a1]" : "shadow-sm hover:border-slate-300"
+        isSelected
+          ? "ring-1 ring-[#0096a1]"
+          : "shadow-sm hover:border-slate-300"
       }`}
     >
       <div className="p-5 flex justify-between items-start">
@@ -495,19 +867,19 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
           <p className="font-bold text-xl">${service.price}</p>
           <Button
             onClick={handleSelect}
-            className={`mt-2 ${
-              isOpen
-                ? "bg-[#0096a1] text-white"
-                : "bg-slate-100 text-slate-800 hover:bg-slate-200"
+            className={`mt-2 cursor-pointer ${
+              isSelected
+                ? "bg-red-500 hover:bg-red-600 text-white"
+                : "bg-[#0096a1] hover:bg-[#007a83] text-white"
             }`}
           >
-            {isOpen ? "Selected" : "Select"}
+            {isSelected ? "Remove" : "Select"}
           </Button>
         </div>
       </div>
 
       <AnimatePresence>
-        {isOpen && (
+        {isSelected && (
           <motion.div
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
@@ -530,9 +902,20 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                   staffList.map((staff) => (
                     <div
                       key={staff._id}
-                      className="flex-shrink-0 text-center space-y-2 cursor-pointer group"
+                      onClick={() => onStaffSelect?.(staff)}
+                      className={`flex-shrink-0 text-center space-y-2 cursor-pointer group transition-all ${
+                        selectedStaff?._id === staff._id
+                          ? "opacity-100 scale-105"
+                          : "opacity-70 hover:opacity-100"
+                      }`}
                     >
-                      <div className="w-14 h-14 rounded-full bg-slate-200 mx-auto border-2 border-transparent group-hover:border-[#0096a1] p-0.5 overflow-hidden transition-all">
+                      <div
+                        className={`w-14 h-14 rounded-full mx-auto border-2 transition-all overflow-hidden ${
+                          selectedStaff?._id === staff._id
+                            ? "border-[#0096a1] ring-2 ring-[#0096a1]/20"
+                            : "border-transparent group-hover:border-[#0096a1]"
+                        }`}
+                      >
                         {staff.avatar?.url ? (
                           <Image
                             src={staff.avatar.url}
@@ -550,6 +933,11 @@ const ServiceItem: React.FC<ServiceItemProps> = ({
                       <p className="text-[11px] font-bold">
                         {staff.firstName} {staff.lastName}
                       </p>
+                      {selectedStaff?._id === staff._id && (
+                        <p className="text-[10px] text-[#0096a1] font-semibold">
+                          Selected
+                        </p>
+                      )}
                     </div>
                   ))
                 )}

@@ -97,8 +97,8 @@ export default function TopRatedNearYou() {
                 </p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-[#e7efee] pt-4">
-                  <Link href={`/`}>
-                    <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a]">
+                  <Link href={`/services/${item?._id}`}>
+                    <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a] cursor-pointer">
                       Book
                       <ChevronRight className="h-4 w-4" />
                     </button>

@@ -84,7 +84,7 @@ export default function Navbar() {
             </div>
           ) : (
             <Link href={"/login"} className="hover:cursor-pointer">
-              <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
+              <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary cursor-pointer">
                 Log in
               </button>
             </Link>
@@ -160,7 +160,7 @@ export default function Navbar() {
                 <div className="flex flex-col gap-3">
                   <Link
                     href="/login"
-                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                    className="w-full cursor-pointer h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
                   >
                     Log in
                   </Link>

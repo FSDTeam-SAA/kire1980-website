@@ -1,7 +1,11 @@
-import React from "react";
+import AddYourBusiness from "./_components/add-your-business";
 
 const page = () => {
-  return <div>page</div>;
+  return (
+    <div>
+      <AddYourBusiness />
+    </div>
+  );
 };
 
 export default page;

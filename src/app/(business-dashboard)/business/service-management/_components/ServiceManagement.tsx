@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import { useBusinessId } from "../../../../../../zustand/useServiceId";
 import { useState } from "react";
 import EditServiceModal from "./EditServiceModal";
+import StatsCards from "./StatsCards";
 
 const stats = [
   { label: "Total Services", value: "24" },
@@ -165,22 +166,7 @@ export default function ServiceManagement() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white p-6 rounded-[16px] border border-slate-100 shadow-sm"
-          >
-            <p className="text-xs font-medium text-slate-400 mb-2">
-              {stat.label}
-            </p>
-
-            <p className="text-2xl font-bold text-slate-800 tracking-tight">
-              {stat.value}
-            </p>
-          </div>
-        ))}
-      </div>
+      <StatsCards />
 
       {/* Services Table */}
       <div className="bg-white rounded-[20px] border border-slate-100 shadow-sm overflow-hidden">

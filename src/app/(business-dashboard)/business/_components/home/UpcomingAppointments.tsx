@@ -1,135 +1,402 @@
-import { Check, X } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+"use client";
+import { useState } from "react";
+import { Check, X, ChevronRight, Calendar } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useSession } from "next-auth/react";
 
-const appointments = [
-  {
-    id: 1,
-    name: "Jenny Wilson",
-    service: "Deep Tissue Massage",
-    staff: "David Chen",
-    time: "15 May 2020 8:00 am",
-    status: "Confirm",
-  },
-  {
-    id: 2,
-    name: "Michael Smith",
-    service: "Swedish Massage",
-    staff: "Emily Johnson",
-    time: "16 May 2020 9:30 am",
-    status: "Confirm",
-  },
-  {
-    id: 3,
-    name: "Emma Brown",
-    service: "Hot Stone Massage",
-    staff: "Michael Lee",
-    time: "17 May 2020 10:00 am",
-    status: "Confirm",
-  },
-  {
-    id: 4,
-    name: "Olivia Davis",
-    service: "Aromatherapy Massage",
-    staff: "Sophia Williams",
-    time: "18 May 2020 11:30 am",
-    status: "Confirm",
-  },
-  {
-    id: 5,
-    name: "Liam Taylor",
-    service: "Sports Massage",
-    staff: "James Martinez",
-    time: "19 May 2020 1:00 pm",
-    status: "Confirm",
-  },
-];
+interface Booking {
+  _id: string;
+  userId: {
+    _id: string;
+    email: string;
+  };
+  services: Array<{
+    serviceId: {
+      _id: string;
+      serviceName: string;
+      serviceDuration: string;
+      price: number;
+    };
+    dateAndTime: string;
+    selectedProvider: {
+      _id: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+    };
+  }>;
+  businessId: {
+    _id: string;
+    businessName: string;
+    businessEmail: string;
+    phoneNumber: string;
+  };
+  bookingStatus: "pending" | "confirmed" | "cancelled" | "completed";
+  notes?: string;
+  isDeleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+  cancellationReason?: string;
+  cancelledAt?: string;
+}
 
-export function UpcomingAppointments() {
-  return (
-    <div className="w-full bg-white rounded-[24px] border border-slate-100 p-8 shadow-sm">
-      {/* Header Section */}
-      <div className="flex justify-between items-start mb-8">
-        <div>
-          <h2 className="text-lg font-bold text-slate-900">
-            Upcoming Appointments
-          </h2>
-          <p className="text-xs text-slate-400 font-medium">
-            Next 48 hours activity
-          </p>
+interface ApiResponse {
+  statusCode: number;
+  message: string;
+  data: {
+    data: Booking[];
+    meta: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
+}
+
+const fetchBookings = async (token: string): Promise<ApiResponse> => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    },
+  );
+
+  if (!response.ok) throw new Error("Failed to fetch bookings");
+  return response.json();
+};
+
+const confirmBooking = async ({ id, token }: { id: string; token: string }) => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ bookingStatus: "confirmed" }),
+    },
+  );
+
+  if (!response.ok) throw new Error("Failed to confirm booking");
+  return response.json();
+};
+
+const cancelBooking = async ({
+  id,
+  token,
+  reason,
+}: {
+  id: string;
+  token: string;
+  reason: string;
+}) => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${id}/cancel`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ cancellationReason: reason }),
+    },
+  );
+
+  if (!response.ok) throw new Error("Failed to cancel booking");
+  return response.json();
+};
+
+const completeBooking = async ({
+  id,
+  token,
+}: {
+  id: string;
+  token: string;
+}) => {
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${id}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ bookingStatus: "completed" }),
+    },
+  );
+
+  if (!response.ok) throw new Error("Failed to complete booking");
+  return response.json();
+};
+
+const StatsSkeleton = () => (
+  <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    {[...Array(4)].map((_, i) => (
+      <div
+        key={i}
+        className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm"
+      >
+        <Skeleton className="h-4 w-24 mb-4" />
+        <div className="flex justify-between items-end">
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-4 w-12" />
         </div>
-        <button className="text-xs font-bold text-slate-600 hover:underline">
-          See all
-        </button>
       </div>
+    ))}
+  </div>
+);
 
-      {/* Table Section */}
-      <Table>
-        <TableHeader>
-          <TableRow className="border-none hover:bg-transparent">
-            <TableHead className="text-slate-900 font-bold text-sm h-12">
-              Client Name
-            </TableHead>
-            <TableHead className="text-slate-900 font-bold text-sm h-12">
-              Service Type
-            </TableHead>
-            <TableHead className="text-slate-900 font-bold text-sm h-12 text-center">
-              Staff Name
-            </TableHead>
-            <TableHead className="text-slate-900 font-bold text-sm h-12 text-center">
-              Time & Date
-            </TableHead>
-            <TableHead className="text-slate-900 font-bold text-sm h-12 text-center">
-              Status
-            </TableHead>
-            <TableHead className="text-slate-900 font-bold text-sm h-12 text-right">
-              Action
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {appointments.map((appt) => (
-            <TableRow
-              key={appt.id}
-              className="border-slate-50 hover:bg-slate-50/50 transition-colors"
-            >
-              <TableCell className="py-5 font-semibold text-slate-700">
-                {appt.name}
-              </TableCell>
-              <TableCell className="py-5 font-semibold text-slate-700">
-                {appt.service}
-              </TableCell>
-              <TableCell className="py-5 font-semibold text-slate-700 text-center">
-                {appt.staff}
-              </TableCell>
-              <TableCell className="py-5 font-semibold text-slate-700 text-center">
-                {appt.time}
-              </TableCell>
-              <TableCell className="py-5 text-center">
-                <span className="bg-[#E8F7F7] text-[#169C9F] text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-tight">
-                  {appt.status}
-                </span>
-              </TableCell>
-              <TableCell className="py-5 text-right">
-                <div className="flex justify-end gap-2">
-                  <button className="w-8 h-8 rounded-full bg-[#169C9F] flex items-center justify-center text-white hover:bg-[#138689] transition-all">
-                    <Check size={16} strokeWidth={3} />
-                  </button>
-                  <button className="w-8 h-8 rounded-full bg-[#FF4D4D] flex items-center justify-center text-white hover:bg-red-600 transition-all">
-                    <X size={16} strokeWidth={3} />
-                  </button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+const TableSkeleton = () => (
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <div className="p-6 border-b border-gray-50">
+      <Skeleton className="h-6 w-48 mb-2" />
+      <Skeleton className="h-3 w-32" />
+    </div>
+    <div className="divide-y divide-gray-50">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="p-4">
+          <div className="grid grid-cols-6 gap-4">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-6 w-16 mx-auto" />
+            <div className="flex justify-center gap-2">
+              <Skeleton className="h-7 w-7 rounded-full" />
+              <Skeleton className="h-7 w-7 rounded-full" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+export default function UpcomingAppointments() {
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
+    null,
+  );
+
+  const session = useSession();
+  const token = session?.data?.user?.accessToken;
+  const queryClient = useQueryClient();
+
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: ["bookings"],
+    queryFn: () => fetchBookings(token as string),
+    enabled: !!token,
+  });
+
+  const confirmMutation = useMutation({
+    mutationFn: confirmBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: cancelBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      setCancelModalOpen(false);
+      setSelectedBookingId(null);
+    },
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: completeBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+    },
+  });
+
+  const allBookings = data?.data?.data || [];
+
+  const bookings = allBookings.filter(
+    (booking) =>
+      booking.bookingStatus === "pending" ||
+      booking.bookingStatus === "confirmed",
+  );
+
+  const totalBookings = bookings.length;
+
+  const handleConfirm = (id: string) => {
+    if (window.confirm("Are you sure you want to confirm this booking?")) {
+      confirmMutation.mutate({ id, token: token as string });
+    }
+  };
+
+  const handleCancelClick = (id: string) => {
+    setSelectedBookingId(id);
+    setCancelModalOpen(true);
+  };
+
+  const handleComplete = (id: string) => {
+    if (
+      window.confirm("Are you sure you want to mark this booking as completed?")
+    ) {
+      completeMutation.mutate({ id, token: token as string });
+    }
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    }).format(date);
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "confirmed":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "cancelled":
+        return "bg-red-100 text-red-700 border-red-200";
+      case "completed":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      default:
+        return "bg-yellow-100 text-yellow-700 border-yellow-200";
+    }
+  };
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F0F7F7] p-8 flex items-center justify-center">
+        <div className="bg-white rounded-xl p-8 text-center">
+          <p className="text-red-500 mb-4 text-base">Failed to load bookings</p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-[#00A3A3] text-white rounded-lg text-sm font-medium"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#F0F7F7]">
+      {isLoading ? (
+        <>
+          <StatsSkeleton />
+          <TableSkeleton />
+        </>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-6 border-b border-gray-50">
+            <h2 className="font-bold text-gray-800 text-lg">
+              Upcoming Appointments
+            </h2>
+            <p className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wide">
+              Total {totalBookings} bookings found
+            </p>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-xs font-bold text-gray-400 border-b border-gray-50 uppercase tracking-tight">
+                  <th className="px-6 py-5">Client Name</th>
+                  <th className="px-6 py-5">Service Type</th>
+                  <th className="px-6 py-5">Staff Name</th>
+                  <th className="px-6 py-5">Date & Time</th>
+                  <th className="px-6 py-5 text-center">Status</th>
+                  <th className="px-6 py-5 text-center">Actions</th>
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-gray-50">
+                {bookings.slice(0, 5).map((booking) => (
+                  <tr
+                    key={booking._id}
+                    className="text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 font-medium text-gray-700">
+                      {booking.userId.email.split("@")[0]}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      {booking.services[0]?.serviceId?.serviceName}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      {booking.services[0]?.selectedProvider?.firstName}{" "}
+                      {booking.services[0]?.selectedProvider?.lastName}
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <Calendar size={14} />
+                        {formatDateTime(booking.services[0]?.dateAndTime)}
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <span
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${getStatusColor(
+                          booking.bookingStatus,
+                        )}`}
+                      >
+                        {booking.bookingStatus.toUpperCase()}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center gap-2">
+                        {booking.bookingStatus === "pending" && (
+                          <>
+                            <button
+                              onClick={() => handleConfirm(booking._id)}
+                              className="w-8 h-8 rounded-full bg-[#00A3A3] text-white flex items-center justify-center"
+                            >
+                              <Check size={16} />
+                            </button>
+
+                            <button
+                              onClick={() => handleCancelClick(booking._id)}
+                              className="w-8 h-8 rounded-full bg-[#FF4D4D] text-white flex items-center justify-center"
+                            >
+                              <X size={16} />
+                            </button>
+                          </>
+                        )}
+
+                        {booking.bookingStatus === "confirmed" && (
+                          <button
+                            onClick={() => handleComplete(booking._id)}
+                            className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
+                          >
+                            <Check size={16} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {bookings.length === 0 && (
+              <div className="text-center py-12 text-gray-400 text-sm">
+                No bookings found
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

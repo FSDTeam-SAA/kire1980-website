@@ -16,15 +16,18 @@ export default function Navbar() {
     <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
       <div className="container mx-auto flex h-[74px] items-center justify-between px-4">
         {/* Left Logo */}
-        <div className="flex items-center">
-          <Image
-            src="/images/logo.png"
-            alt="Bookersi Logo"
-            width={70}
-            height={70}
-            className="h-auto w-[60px] md:w-[80px] object-contain"
-          />
-        </div>
+        <Link href={`/`}>
+          {" "}
+          <div className="flex items-center">
+            <Image
+              src="/images/logo.png"
+              alt="Bookersi Logo"
+              width={70}
+              height={70}
+              className="h-auto w-[60px] md:w-[80px] object-contain"
+            />
+          </div>
+        </Link>
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6">

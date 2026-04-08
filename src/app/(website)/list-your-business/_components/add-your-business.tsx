@@ -95,6 +95,7 @@ const AddYourBusiness = () => {
   const router = useRouter();
   const session = useSession();
   const role = session?.data?.user?.role;
+  const status = session?.status;
 
   const form = useForm<BusinessFormValues>({
     resolver: zodResolver(businessSchema),

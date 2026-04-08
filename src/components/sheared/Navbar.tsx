@@ -11,6 +11,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const session = useSession();
+  const role = session?.data?.user?.role;
 
   return (
     <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
@@ -43,7 +44,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setUserMenu(!userMenu)}
-                className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white border border-gray-200 hover:bg-gray-50"
+                className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white border border-gray-200 hover:bg-gray-50 cursor-pointer"
               >
                 {session.data.user.profileImage ? (
                   <Image
@@ -61,16 +62,16 @@ export default function Navbar() {
               {userMenu && (
                 <div className="absolute right-0 mt-3 w-[200px] bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                   <Link
-                    href="/user/profile"
+                    href={
+                      role === "customer"
+                        ? "/user/profile"
+                        : role === "businessowner"
+                          ? "/business"
+                          : "#"
+                    }
                     className="block px-4 py-3 text-sm hover:bg-gray-50"
                   >
                     My Profile
-                  </Link>
-                  <Link
-                    href="/business-profile"
-                    className="block px-4 py-3 text-sm hover:bg-gray-50"
-                  >
-                    Business Profile
                   </Link>
                   <button
                     onClick={() => signOut()}
@@ -90,9 +91,14 @@ export default function Navbar() {
           )}
 
           {/* CTA */}
-          <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90">
-            List Your Business
-          </button>
+          {role === "businessowner" && (
+            <Link href={`/list-your-business`}>
+              {" "}
+              <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90 cursor-pointer">
+                List Your Business
+              </button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}

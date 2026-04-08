@@ -52,14 +52,16 @@ export default function Banner() {
             {/* Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href={`/services/adfaf`}>
-                <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
+                <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition cursor-pointer">
                   Book Now
                 </button>
               </Link>
 
-              <button className="w-full sm:w-auto border border-primary text-primary px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition">
-                Join as Business
-              </button>
+              <Link href={`/list-your-business`}>
+                <button className="w-full sm:w-auto border border-primary text-primary px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition cursor-pointer">
+                  Join as Business
+                </button>
+              </Link>
             </div>
           </div>
         </div>

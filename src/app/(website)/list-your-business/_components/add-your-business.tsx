@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Trash2,
+  LogOut,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { useSession, signOut } from "next-auth/react";
 
 // --- Schema Definition ---
 const businessSchema = z.object({
@@ -89,7 +91,10 @@ const AddYourBusiness = () => {
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
   const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
   const router = useRouter();
+  const session = useSession();
+  const role = session?.data?.user?.role;
 
   const form = useForm<BusinessFormValues>({
     resolver: zodResolver(businessSchema),
@@ -163,7 +168,7 @@ const AddYourBusiness = () => {
     return null;
   };
 
-  // --- Business Profile Mutation ---
+  // --- Business Profile Mutation (Moved before conditional returns) ---
   const {
     mutate: businessProfileMutation,
     isPending: isBusinessProfilePending,
@@ -213,20 +218,6 @@ const AddYourBusiness = () => {
       }
 
       const token = getToken();
-
-      console.log("Sending data:", {
-        businessName: values.businessName,
-        businessEmail: values.email,
-        phoneNumber: values.phoneNumber,
-        businessCategory: values.sector,
-        totalStaff: values.totalStaff,
-        country: values.country,
-        city: values.city,
-        postalCode: values.postalCode,
-        sector: values.sector,
-        openingHour: formattedOpeningHours,
-        description: values.description,
-      });
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/businesses`,
@@ -330,6 +321,68 @@ const AddYourBusiness = () => {
     }
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    signOut({ callbackUrl: "/sign-up" });
+  };
+
+  // Check if user is authenticated and has businessowner role (after all hooks)
+  if (status === "loading") {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-[800px] mx-auto">
+          <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm text-center">
+            <Loader2 className="animate-spin h-12 w-12 mx-auto text-primary mb-4" />
+            <h2 className="text-2xl font-serif text-[#1A2E35] font-medium mb-2">
+              Loading...
+            </h2>
+            <p className="text-gray-500">
+              Please wait while we verify your account.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not logged in or role is not businessowner
+  if (!session || role !== "businessowner") {
+    return (
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="max-w-[800px] mx-auto">
+          <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm text-center">
+            <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
+              <Lock className="w-10 h-10 text-red-600" />
+            </div>
+            <h2 className="text-2xl font-serif text-[#1A2E35] font-medium mb-3">
+              Access Restricted
+            </h2>
+            <p className="text-gray-600 mb-6">
+              This page is only for business owners. Please register as a
+              business owner to access this page.
+            </p>
+            <div className="flex gap-4 justify-center">
+              <Button
+                onClick={() => router.push("/")}
+                variant="outline"
+                className="cursor-pointer"
+              >
+                Go to Home
+              </Button>
+              <Button
+                onClick={() => signOut({ callbackUrl: "/sign-up" })}
+                className="bg-[#0096a1] hover:bg-[#007a83] text-white cursor-pointer"
+              >
+                Sign Up as Business
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state while submitting business profile
   if (isBusinessProfilePending) {
     return (
@@ -375,8 +428,11 @@ const AddYourBusiness = () => {
             />
           </div>
         </div>
-        <button className="text-gray-400 hover:text-red-500 transition">
-          <X size={24} />
+        <button
+          onClick={() => setIsLogoutDialogOpen(true)}
+          className="text-gray-400 hover:text-red-500 transition flex items-center gap-2"
+        >
+          <LogOut size={20} />
         </button>
       </div>
 
@@ -845,6 +901,43 @@ const AddYourBusiness = () => {
                 className="bg-[#0096a1] hover:bg-[#007a83] text-white px-6"
               >
                 Go to Business
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={isLogoutDialogOpen} onOpenChange={setIsLogoutDialogOpen}>
+        <DialogContent className="max-w-md text-center">
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+              <LogOut className="w-10 h-10 text-red-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-red-600">
+                Confirm Logout
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 text-center">
+              <p className="text-slate-600">Are you sure you want to logout?</p>
+              <p className="text-sm text-slate-500">
+                You will be redirected to the sign-up page.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                onClick={() => setIsLogoutDialogOpen(false)}
+                className="cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-6 cursor-pointer"
+              >
+                Logout
               </Button>
             </div>
           </div>

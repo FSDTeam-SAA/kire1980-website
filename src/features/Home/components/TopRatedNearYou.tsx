@@ -162,7 +162,7 @@ export default function TopRatedNearYou() {
   }
 
   return (
-    <section className="bg-[#f8fbfa] py-16 md:py-24">
+    <section id="business" className="bg-[#f8fbfa] py-16 md:py-24">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">

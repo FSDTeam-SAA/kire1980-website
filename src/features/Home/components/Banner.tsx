@@ -51,7 +51,7 @@ export default function Banner() {
 
             {/* Buttons */}
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href={`/services/adfaf`}>
+              <Link href={`#business`}>
                 <button className="w-full sm:w-auto bg-primary text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition cursor-pointer">
                   Book Now
                 </button>

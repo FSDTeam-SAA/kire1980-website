@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ServiceItemProps {
   service: Service;
@@ -114,6 +115,37 @@ const ServiceDetails = () => {
     },
     enabled: !!id,
   });
+
+  //wishlist mutation
+  const { mutateAsync: wishListMutation, isPending: wishListPending } =
+    useMutation({
+      mutationKey: ["wishlist"],
+      mutationFn: async () => {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/wishlists/business/${id}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "Application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          },
+        );
+
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData?.message || "Something went wrong");
+        }
+
+        return await res.json();
+      },
+      onSuccess: () => {
+        toast.success("Business added to wishlist");
+      },
+      onError: (data) => {
+        toast.error(data?.message);
+      },
+    });
 
   // Booking mutation
   const bookingMutation = useMutation({
@@ -389,8 +421,14 @@ const ServiceDetails = () => {
             </div>
           </div>
           <div className="flex gap-2 w-full md:w-auto">
-            <Button variant="outline" size="icon" className="rounded-full">
-              <Heart size={18} />
+            <Button
+              disabled={wishListPending}
+              onClick={() => wishListMutation()}
+              variant="outline"
+              size="icon"
+              className="rounded-full cursor-pointer hover:bg-[#0096a1] hover:text-white"
+            >
+              {wishListPending ? <Spinner /> : <Heart size={18} />}
             </Button>
             <Button
               onClick={() => {

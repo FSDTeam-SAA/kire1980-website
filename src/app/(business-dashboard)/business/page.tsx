@@ -1,7 +1,7 @@
 import React from "react";
 import { DashboardStats } from "./_components/home/DashboardStats";
 import { BookingChart } from "./_components/home/BookingChart";
-import { UpcomingAppointments } from "./_components/home/UpcomingAppointments";
+import UpcomingAppointments from "./_components/home/UpcomingAppointments";
 
 const page = () => {
   return (

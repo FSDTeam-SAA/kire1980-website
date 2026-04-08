@@ -141,7 +141,7 @@ export default function Navbar() {
                     My Profile
                   </Link>
                   <Link
-                    href="/business-profile"
+                    href="/business"
                     className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
                   >
                     Business Profile

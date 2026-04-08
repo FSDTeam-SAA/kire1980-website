@@ -48,25 +48,7 @@ export default function DashboardHeaderBusiness() {
 
   return (
     <header className="w-full h-[100px] bg-white shadow-sm border-b px-4 py-3 flex items-center justify-between">
-      <form
-        onSubmit={handleSearch}
-        className="flex w-full max-w-sm h-10 items-stretch"
-      >
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search..."
-          className="flex-grow px-4 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-teal-500 transition-all"
-        />
-        <button
-          type="submit"
-          className="flex items-center justify-center w-12 bg-[#1a999e] hover:bg-[#147e82] text-white rounded-r-lg border border-[#1a999e] transition-colors"
-        >
-          <Search size={18} strokeWidth={2.5} />
-        </button>
-      </form>
-      <div className="flex items-center gap-4">
+      <div className="flex items-end justify-end w-full gap-4">
         {/* User Avatar */}
         <Avatar className="cursor-pointer">
           <AvatarImage src="/avatar.png" alt="User Avatar" />

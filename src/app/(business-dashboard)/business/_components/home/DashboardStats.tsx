@@ -31,7 +31,6 @@ export function DashboardStats() {
     enabled: !!token && !!session?.user?.id,
   });
 
-  // BUSINESS STATISTICS
   const { data: business } = useQuery({
     queryKey: ["bussiness-statistic"],
     queryFn: async () => {
@@ -50,8 +49,6 @@ export function DashboardStats() {
     },
     enabled: !!token,
   });
-
-  console.log();
 
   const stats = [
     {

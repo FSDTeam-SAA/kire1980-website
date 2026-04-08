@@ -162,7 +162,7 @@ export default function TopRatedNearYou() {
   }
 
   return (
-    <section className="bg-[#f8fbfa] py-16 md:py-24">
+    <section id="business" className="bg-[#f8fbfa] py-16 md:py-24">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -222,8 +222,8 @@ export default function TopRatedNearYou() {
                 </p>
 
                 <div className="mt-5 flex items-center justify-between border-t border-[#e7efee] pt-4">
-                  <Link href={`/`}>
-                    <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a]">
+                  <Link href={`/services/${item?._id}`}>
+                    <button className="inline-flex items-center gap-1 text-lg font-medium text-[#1f2937] transition hover:text-[#1aa39a] cursor-pointer">
                       Book
                       <ChevronRight className="h-4 w-4" />
                     </button>

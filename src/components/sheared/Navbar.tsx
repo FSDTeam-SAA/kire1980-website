@@ -11,20 +11,24 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
   const session = useSession();
+  const role = session?.data?.user?.role;
 
   return (
     <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
       <div className="container mx-auto flex h-[74px] items-center justify-between px-4">
         {/* Left Logo */}
-        <div className="flex items-center">
-          <Image
-            src="/images/logo.png"
-            alt="Bookersi Logo"
-            width={70}
-            height={70}
-            className="h-auto w-[60px] md:w-[80px] object-contain"
-          />
-        </div>
+        <Link href={`/`}>
+          {" "}
+          <div className="flex items-center">
+            <Image
+              src="/images/logo.png"
+              alt="Bookersi Logo"
+              width={70}
+              height={70}
+              className="h-auto w-[60px] md:w-[80px] object-contain"
+            />
+          </div>
+        </Link>
 
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6">
@@ -40,7 +44,7 @@ export default function Navbar() {
             <div className="relative">
               <button
                 onClick={() => setUserMenu(!userMenu)}
-                className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white border border-gray-200 hover:bg-gray-50"
+                className="flex items-center justify-center w-[44px] h-[44px] rounded-full bg-white border border-gray-200 hover:bg-gray-50 cursor-pointer"
               >
                 {session.data.user.profileImage ? (
                   <Image
@@ -58,16 +62,16 @@ export default function Navbar() {
               {userMenu && (
                 <div className="absolute right-0 mt-3 w-[200px] bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
                   <Link
-                    href="/user/profile"
+                    href={
+                      role === "customer"
+                        ? "/user/profile"
+                        : role === "businessowner"
+                          ? "/business"
+                          : "#"
+                    }
                     className="block px-4 py-3 text-sm hover:bg-gray-50"
                   >
                     My Profile
-                  </Link>
-                  <Link
-                    href="/business"
-                    className="block px-4 py-3 text-sm hover:bg-gray-50"
-                  >
-                    Business Profile
                   </Link>
                   <button
                     onClick={() => signOut()}
@@ -80,16 +84,21 @@ export default function Navbar() {
             </div>
           ) : (
             <Link href={"/login"} className="hover:cursor-pointer">
-              <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary">
+              <button className="text-[16px] font-semibold text-[#1F2937] transition hover:text-primary cursor-pointer">
                 Log in
               </button>
             </Link>
           )}
 
           {/* CTA */}
-          <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90">
-            List Your Business
-          </button>
+          {role === "businessowner" && (
+            <Link href={`/list-your-business`}>
+              {" "}
+              <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90 cursor-pointer">
+                List Your Business
+              </button>
+            </Link>
+          )}
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -151,7 +160,7 @@ export default function Navbar() {
                 <div className="flex flex-col gap-3">
                   <Link
                     href="/login"
-                    className="w-full h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
+                    className="w-full cursor-pointer h-[54px] flex items-center justify-center text-[16px] font-semibold text-[#1F2937] border border-gray-100 rounded-xl hover:bg-gray-50 transition"
                   >
                     Log in
                   </Link>

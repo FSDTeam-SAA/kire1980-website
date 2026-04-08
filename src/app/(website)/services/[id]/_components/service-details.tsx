@@ -9,17 +9,17 @@ import {
   Car,
   Clock,
   MapPin,
-  Share2,
   Heart,
   Search,
   X,
+  CheckCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Business, Service, Staff } from "@/types/businessDetailsType";
 import { ServiceDetailsSkeleton } from "./service-details-skeleton";
 import { useSession } from "next-auth/react";
@@ -68,7 +68,9 @@ const ServiceDetails = () => {
   const [isTimeSlotOpen, setIsTimeSlotOpen] = useState(false);
   const [notes, setNotes] = useState("");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const { id } = useParams();
+  const router = useRouter();
   const session = useSession();
   const token = session?.data?.user?.accessToken;
 
@@ -132,15 +134,12 @@ const ServiceDetails = () => {
       return data;
     },
     onSuccess: () => {
-      toast.success("Booking Confirmed!", {
-        description: "Your appointments have been successfully booked.",
-        duration: 5000,
-      });
       setIsBookingModalOpen(false);
       setSelectedServices(new Map());
       setGlobalDate(undefined);
       setGlobalTimeSlot("");
       setNotes("");
+      setIsSuccessModalOpen(true);
     },
     onError: (error: Error) => {
       toast.error("Booking Failed", {
@@ -816,6 +815,42 @@ const ServiceDetails = () => {
               {bookingMutation.isPending ? "Booking..." : "Confirm Booking"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Modal - Popup instead of toast */}
+      <Dialog open={isSuccessModalOpen} onOpenChange={setIsSuccessModalOpen}>
+        <DialogContent className="max-w-md text-center">
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-green-600">
+                Booking Confirmed!
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 text-center">
+              <p className="text-slate-600">
+                Your appointment has been successfully booked.
+              </p>
+              <p className="text-sm text-slate-500">
+                You will receive a confirmation email shortly with all the
+                details.
+              </p>
+            </div>
+            <div className="mt-4">
+              <Button
+                onClick={() => {
+                  setIsSuccessModalOpen(false);
+                  router.push(`/services/${id}`);
+                }}
+                className="bg-[#0096a1] hover:bg-[#007a83] text-white px-8 cursor-pointer"
+              >
+                Done
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

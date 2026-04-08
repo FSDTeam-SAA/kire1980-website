@@ -1,7 +1,5 @@
 "use client";
-
-import React from "react";
-import { Star, MapPin, Clock, Calendar, ChevronLeft } from "lucide-react";
+import { Star, MapPin, Clock, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";

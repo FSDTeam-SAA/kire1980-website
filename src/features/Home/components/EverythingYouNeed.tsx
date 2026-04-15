@@ -1,9 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { Clock3, ShieldCheck, Bell, CreditCard, Check } from "lucide-react";
+import {
+  Clock3,
+  ShieldCheck,
+  Bell,
+  CreditCard,
+  Check,
+  BarChart3,
+  CalendarCheck,
+  Users,
+  TrendingUp,
+} from "lucide-react";
 
-const features = [
+const customerFeatures = [
   {
     icon: Clock3,
     title: "Real-Time Availability",
@@ -30,7 +41,45 @@ const features = [
   },
 ];
 
+const businessFeatures = [
+  {
+    icon: CalendarCheck,
+    title: "Smart Booking Management",
+    description:
+      "Accept bookings 24/7 with automated sceheduling and real-time calender updates.",
+  },
+  {
+    icon: Users,
+    title: "Staff & Team Control",
+    description:
+      "Assign services and manage staff schedules, and trac performance easily.",
+  },
+  {
+    icon: BarChart3,
+    title: "Business Analytics",
+    description:
+      "Track revenue, bookings, and costomer trends with simple dashboards.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Automated Payments",
+    description: "Get paid securely with buiti payment tracking and reports.",
+  },
+];
+
 export default function EverythingYouNeed() {
+  const [activeTab, setActiveTab] = useState<"customers" | "businesses">(
+    "customers",
+  );
+
+  const features =
+    activeTab === "customers" ? customerFeatures : businessFeatures;
+
+  const image =
+    activeTab === "customers"
+      ? "/images/EverythingYouNeed.jpg"
+      : "/for-business.jpg";
+
   return (
     <section className="bg-[#F0F9F8] py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -47,10 +96,25 @@ export default function EverythingYouNeed() {
 
           {/* Tabs */}
           <div className="mt-8 inline-flex rounded-xl border border-[#b9ddda] bg-white p-1 shadow-sm">
-            <button className="rounded-lg bg-[#1aa39a] px-6 py-3 text-sm font-semibold text-white">
+            <button
+              onClick={() => setActiveTab("customers")}
+              className={`rounded-lg px-6 py-3 text-sm font-semibold ${
+                activeTab === "customers"
+                  ? "bg-[#1aa39a] text-white"
+                  : "text-[#1aa39a]"
+              }`}
+            >
               For Customers
             </button>
-            <button className="rounded-lg px-6 py-3 text-sm font-semibold text-[#1aa39a]">
+
+            <button
+              onClick={() => setActiveTab("businesses")}
+              className={`rounded-lg px-6 py-3 text-sm font-semibold ${
+                activeTab === "businesses"
+                  ? "bg-[#1aa39a] text-white"
+                  : "text-[#1aa39a]"
+              }`}
+            >
               For Businesses
             </button>
           </div>
@@ -85,23 +149,21 @@ export default function EverythingYouNeed() {
             })}
           </div>
 
-          {/* Right Image Card */}
+          {/* Right Image */}
           <div className="relative">
             <div className="relative overflow-hidden rounded-[22px] shadow-lg">
               <Image
-                src="/images/EverythingYouNeed.jpg"
-                alt="Everything You Need"
+                src={image}
+                alt="Feature"
                 width={900}
                 height={700}
                 className="h-[320px] w-full object-cover md:h-[420px]"
               />
 
-              {/* Top badge */}
               <div className="absolute right-[-10px] top-[-12px] rounded-full bg-[#1aa39a] px-5 py-2 text-sm font-medium text-white shadow-md">
                 2M+ Bookings
               </div>
 
-              {/* Bottom floating card */}
               <div className="absolute bottom-5 left-1/2 flex w-[92%] -translate-x-1/2 items-center justify-between gap-3 rounded-2xl bg-[#f8f5f1] px-4 py-3 shadow-xl md:w-[86%] md:px-5 md:py-4">
                 <div className="flex items-center gap-3">
                   <div className="h-12 w-12 overflow-hidden rounded-full">
@@ -124,7 +186,7 @@ export default function EverythingYouNeed() {
                   </div>
                 </div>
 
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white">
                   <Check className="h-4 w-4 text-[#1f2937]" />
                 </div>
               </div>

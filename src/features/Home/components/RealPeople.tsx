@@ -35,7 +35,7 @@ type Review = {
 /* -------------------- API CALL -------------------- */
 
 const fetchReviews = async (): Promise<Review[]> => {
-  const res = await fetch("http://localhost:5000/reviews");
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/reviews`);
 
   if (!res.ok) {
     throw new Error("Failed to fetch reviews");

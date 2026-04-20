@@ -1,20 +1,184 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Globe, ChevronDown, Menu, X, User, LogOut } from "lucide-react";
+import { Globe, Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+declare global {
+  interface Window {
+    googleTranslateElementInit?: () => void;
+    google?: {
+      translate?: {
+        TranslateElement?: new (
+          options: Record<string, unknown>,
+          element: string,
+        ) => void;
+      };
+    };
+  }
+}
+
+const SOURCE_LANGUAGE = "en";
+const LANGUAGE_STORAGE_KEY = "bookersi-language";
+
+const languages = [
+  { code: "en", label: "English" },
+  { code: "mk", label: "Macedonian" },
+] as const;
+
+type LanguageCode = (typeof languages)[number]["code"];
+
+function getSavedLanguage(): LanguageCode {
+  const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+
+  return languages.some((item) => item.code === savedLanguage)
+    ? (savedLanguage as LanguageCode)
+    : "en";
+}
+
+function setGoogleTranslateCookie(languageCode: LanguageCode) {
+  const cookieValue = `/${SOURCE_LANGUAGE}/${languageCode}`;
+  const expires = "max-age=31536000";
+
+  document.cookie = `googtrans=${cookieValue}; path=/; ${expires}`;
+  document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}; ${expires}`;
+}
+
+function resetGoogleTranslateToolbar() {
+  document.body.style.top = "0px";
+
+  const toolbarFrame = document.querySelector<HTMLIFrameElement>(
+    "iframe.goog-te-banner-frame, iframe.skiptranslate",
+  );
+
+  if (toolbarFrame) {
+    toolbarFrame.style.display = "none";
+  }
+}
+
+function applyGoogleTranslate(languageCode: LanguageCode, retries = 12) {
+  setGoogleTranslateCookie(languageCode);
+  resetGoogleTranslateToolbar();
+
+  const translateSelect =
+    document.querySelector<HTMLSelectElement>(".goog-te-combo");
+
+  if (!translateSelect) {
+    if (retries > 0) {
+      window.setTimeout(
+        () => applyGoogleTranslate(languageCode, retries - 1),
+        250,
+      );
+    }
+
+    return;
+  }
+
+  translateSelect.value = languageCode;
+  translateSelect.dispatchEvent(new Event("change"));
+  window.setTimeout(resetGoogleTranslateToolbar, 250);
+}
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [language, setLanguage] = useState<LanguageCode>(() => {
+    if (typeof window === "undefined") {
+      return "en";
+    }
+
+    return getSavedLanguage();
+  });
   const session = useSession();
   const role = session?.data?.user?.role;
+  const selectedLanguage = useMemo(
+    () => languages.find((item) => item.code === language)?.label ?? "English",
+    [language],
+  );
+
+  useEffect(() => {
+    const initialLanguage = getSavedLanguage();
+
+    setGoogleTranslateCookie(initialLanguage);
+
+    window.googleTranslateElementInit = () => {
+      if (!window.google?.translate?.TranslateElement) {
+        return;
+      }
+
+      new window.google.translate.TranslateElement(
+        {
+          pageLanguage: SOURCE_LANGUAGE,
+          includedLanguages: languages.map((item) => item.code).join(","),
+          autoDisplay: false,
+        },
+        "google_translate_element",
+      );
+
+      window.setTimeout(() => applyGoogleTranslate(getSavedLanguage()), 100);
+    };
+
+    if (!document.querySelector("#google-translate-script")) {
+      const script = document.createElement("script");
+      script.id = "google-translate-script";
+      script.src =
+        "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.async = true;
+      document.body.appendChild(script);
+      return;
+    }
+
+    if (window.google?.translate?.TranslateElement) {
+      window.googleTranslateElementInit();
+      return;
+    }
+
+    window.setTimeout(() => applyGoogleTranslate(initialLanguage), 100);
+  }, []);
+
+  const handleLanguageChange = (value: string) => {
+    const nextLanguage = value as LanguageCode;
+
+    setLanguage(nextLanguage);
+    localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLanguage);
+    setGoogleTranslateCookie(nextLanguage);
+    window.location.reload();
+  };
+
+  const languageSwitcher = (className = "") => (
+    <Select value={language} onValueChange={handleLanguageChange}>
+      <SelectTrigger
+        aria-label="Select language"
+        className={`notranslate h-[44px] rounded-xl border-[#E5E7EB] bg-white px-4 text-[#1F2937] shadow-none transition hover:bg-gray-50 ${className}`}
+      >
+        <div className="flex items-center gap-3">
+          <Globe className="h-5 w-5" />
+          <SelectValue>{selectedLanguage}</SelectValue>
+        </div>
+      </SelectTrigger>
+      <SelectContent align="end" className="notranslate z-[60] bg-white">
+        {languages.map((item) => (
+          <SelectItem key={item.code} value={item.code}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
+      <div id="google_translate_element" className="hidden" />
       <div className="container mx-auto flex h-[74px] items-center justify-between px-4">
         {/* Left Logo */}
         <Link href={`/`}>
@@ -33,11 +197,7 @@ export default function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6">
           {/* Language */}
-          <button className="flex h-[44px] items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 text-[#1F2937] transition hover:bg-gray-50">
-            <Globe className="h-5 w-5" />
-            <span className="text-[16px] font-medium">English</span>
-            <ChevronDown className="h-4 w-4" />
-          </button>
+          {languageSwitcher("min-w-[170px]")}
 
           {/* Login / User Menu */}
           {session?.data?.user ? (
@@ -123,13 +283,9 @@ export default function Navbar() {
           >
             <div className="container mx-auto px-4 py-6 flex flex-col gap-6">
               {/* Language */}
-              <button className="flex items-center justify-between w-full h-[54px] px-4 rounded-xl border border-gray-100 bg-gray-50 text-[#1F2937]">
-                <div className="flex items-center gap-3">
-                  <Globe className="h-5 w-5" />
-                  <span className="text-[16px] font-medium">English</span>
-                </div>
-                <ChevronDown className="h-4 w-4" />
-              </button>
+              {languageSwitcher(
+                "h-[54px] w-full rounded-xl border-gray-100 bg-gray-50",
+              )}
 
               {/* Action Buttons / User Menu */}
               {session?.data?.user ? (

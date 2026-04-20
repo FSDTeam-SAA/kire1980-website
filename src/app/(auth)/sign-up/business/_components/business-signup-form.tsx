@@ -280,7 +280,7 @@ const BusinessSignUpForm = () => {
     },
     onSuccess: () => {
       toast.success("Business profile completed successfully!");
-      router.push("/dashboard");
+      router.push("/business");
     },
     onError: (err: any) => {
       console.error("Mutation error:", err);

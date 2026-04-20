@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Globe, ChevronDown, Menu, X, User, LogOut } from "lucide-react";
+import { Globe, Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";

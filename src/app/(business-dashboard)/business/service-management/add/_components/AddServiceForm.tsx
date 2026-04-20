@@ -16,11 +16,14 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useBusinessId } from "../../../../../../../zustand/useServiceId";
+import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 
 export default function AddServiceForm() {
   const queryClient = useQueryClient();
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
+  const router = useRouter();
   const { businessId } = useBusinessId();
 
   const [formData, setFormData] = useState({
@@ -74,8 +77,7 @@ export default function AddServiceForm() {
       queryClient.invalidateQueries({
         queryKey: ["business-services"],
       });
-
-      console.log("Service added");
+      router.push("/business/service-management");
     },
 
     onError: (err) => {
@@ -191,7 +193,10 @@ export default function AddServiceForm() {
               type="submit"
               className="bg-[#169C9F] text-white px-10 py-6 rounded-xl"
             >
-              Save Service
+              Save Service{" "}
+              {addServiceMutation.isPending && (
+                <Loader2 className="animate-spin mr-2" />
+              )}
             </Button>
           </div>
         </form>

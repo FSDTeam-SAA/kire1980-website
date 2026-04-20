@@ -95,6 +95,7 @@ const AddYourBusiness = () => {
   const router = useRouter();
   const session = useSession();
   const role = session?.data?.user?.role;
+  const token = session?.data?.user?.accessToken;
   const status = session?.status;
 
   const form = useForm<BusinessFormValues>({
@@ -161,14 +162,6 @@ const AddYourBusiness = () => {
     fetchCountries();
   }, []);
 
-  // Get token from localStorage
-  const getToken = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token");
-    }
-    return null;
-  };
-
   // --- Business Profile Mutation (Moved before conditional returns) ---
   const {
     mutate: businessProfileMutation,
@@ -217,8 +210,6 @@ const AddYourBusiness = () => {
           formData.append("gallery", photo);
         });
       }
-
-      const token = getToken();
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/businesses`,

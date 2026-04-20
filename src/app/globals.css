@@ -122,7 +122,27 @@
   body {
     @apply bg-background text-foreground;
     /* font-family: var(--font-poppins), sans-serif !important; */
+    top: 0 !important;
   }
+}
+
+.goog-te-banner-frame,
+.goog-te-menu-frame,
+.goog-te-gadget,
+.goog-logo-link,
+.VIpgJd-ZVi9od-ORHb-OEVmcd,
+.VIpgJd-ZVi9od-l4eHX-hSRGPd,
+body > .skiptranslate {
+  display: none !important;
+}
+
+html.translated-ltr body,
+html.translated-rtl body {
+  top: 0 !important;
+}
+
+#google_translate_element {
+  display: none !important;
 }
 
 @layer utilities {

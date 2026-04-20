@@ -1,20 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Globe, ChevronDown, Menu, X, User, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [userMenu, setUserMenu] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const pathname = usePathname();
   const session = useSession();
   const role = session?.data?.user?.role;
+  const isHomePage = pathname === "/";
+  const showSolidNavbar = !isHomePage || isScrolled || isOpen;
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll);
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
-    <header className="w-full border-b border-gray-200 bg-[#F8FBFA] sticky top-0 z-50">
+    <header
+      className={`fixed top-0 left-0 z-50 w-full transition-colors duration-300 ${
+        showSolidNavbar
+          ? "border-b border-gray-200 bg-white shadow-sm"
+          : "border-b border-transparent bg-transparent"
+      }`}
+    >
       <div className="container mx-auto flex h-[74px] items-center justify-between px-4">
         {/* Left Logo */}
         <Link href={`/`}>
@@ -33,7 +55,7 @@ export default function Navbar() {
         {/* Desktop Right Actions */}
         <div className="hidden md:flex items-center gap-4 lg:gap-6">
           {/* Language */}
-          <button className="flex h-[44px] items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white px-4 text-[#1F2937] transition hover:bg-gray-50">
+          <button className="flex h-[44px] items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white/90 px-4 text-[#1F2937] transition hover:bg-white">
             <Globe className="h-5 w-5" />
             <span className="text-[16px] font-medium">English</span>
             <ChevronDown className="h-4 w-4" />
@@ -105,7 +127,7 @@ export default function Navbar() {
         <div className="md:hidden flex items-center">
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="text-[#1F2937] p-2 hover:bg-gray-100 rounded-lg transition"
+            className="text-[#1F2937] p-2 hover:bg-white/70 rounded-lg transition"
           >
             {isOpen ? <X size={28} /> : <Menu size={28} />}
           </button>

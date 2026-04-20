@@ -5,18 +5,32 @@ import Link from "next/link";
 
 export default function Banner() {
   return (
-    <section className="min-h-[calc(100vh-74px)] lg:h-[calc(100vh-74px)] bg-[#F8FBFA] flex items-center py-12 md:py-0">
-      <div className="container mx-auto px-4">
+    <section className="relative min-h-screen  flex items-center py-12 md:py-0 overflow-hidden">
+      <video
+        className="absolute inset-0 h-full w-full object-cover"
+        src="/background-video.mp4"
+        autoPlay
+        muted
+        loop
+        playsInline
+        aria-hidden="true"
+      />
+      <div
+        className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/15"
+        aria-hidden="true"
+      />
+
+      <div className="relative z-10 container mx-auto px-4">
         <div className="flex items-center justify-center">
           <div className="w-full text-center">
             {/* Heading */}
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-[#1f2937] leading-tight">
+            <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
               Book Services <br />
               Near You <span className="text-primary">Instantly.</span>
             </h1>
 
             {/* Subtitle */}
-            <p className="mt-6 text-[#6b7280] text-sm md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
+            <p className="mt-6 text-white text-sm md:text-lg max-w-2xl mx-auto leading-relaxed px-2">
               Discover top-rated professionals for beauty, fitness, and wellness
               etc. Real-time availability, verified reviews, and seamless
               booking all in one place.
@@ -58,7 +72,7 @@ export default function Banner() {
               </Link>
 
               <Link href={`/list-your-business`}>
-                <button className="w-full sm:w-auto border border-primary text-primary px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition cursor-pointer">
+                <button className="w-full sm:w-auto border border-primary text-white px-8 py-3 rounded-md font-semibold hover:bg-primary/10 transition cursor-pointer">
                   Join as Business
                 </button>
               </Link>

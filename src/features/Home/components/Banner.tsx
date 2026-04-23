@@ -5,7 +5,7 @@ import Link from "next/link";
 
 export default function Banner() {
   return (
-    <section className="relative min-h-screen  flex items-center py-12 md:py-0 overflow-hidden">
+    <section className="relative min-h-screen   flex items-center py-12 md:py-0 overflow-hidden">
       <video
         className="absolute inset-0 h-full w-full object-cover"
         src="/background-video.mp4"
@@ -22,7 +22,7 @@ export default function Banner() {
 
       <div className="relative z-10 container mx-auto px-4">
         <div className="flex items-center justify-center">
-          <div className="w-full text-center">
+          <div className="w-full lg:mt-0 mt-10 text-center">
             {/* Heading */}
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold text-white leading-tight">
               Book Services <br />

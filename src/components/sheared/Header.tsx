@@ -18,7 +18,6 @@ import { signOut } from "next-auth/react";
 import { useState } from "react";
 
 export default function DashboardHeader() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
   const loading = false;

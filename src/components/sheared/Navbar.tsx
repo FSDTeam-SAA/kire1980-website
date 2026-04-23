@@ -213,7 +213,7 @@ export default function Navbar() {
               width={1000}
               height={1000}
               priority
-              className="h-auto w-[78px] object-contain md:w-[100px]"
+              className="h-auto w-[98px] object-contain md:w-[150px] lg:mt-10"
             />
           </div>
         </Link>

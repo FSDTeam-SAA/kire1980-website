@@ -203,7 +203,7 @@ export default function Navbar() {
       }`}
     >
       <div id="google_translate_element" className="hidden" />
-      <div className="container mx-auto flex h-[80px] items-center justify-between px-4">
+      <div className="container mx-auto flex h-[90px] items-center justify-between px-4">
         {/* Left Logo */}
         <Link href={`/`}>
           <div className="flex items-center">
@@ -213,7 +213,7 @@ export default function Navbar() {
               width={1000}
               height={1000}
               priority
-              className="h-auto w-[98px] object-contain md:w-[120px] lg:mt-4"
+              className="h-auto w-[110px] object-contain md:w-[120px] lg:mt-4"
             />
           </div>
         </Link>

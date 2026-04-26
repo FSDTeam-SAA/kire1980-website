@@ -8,7 +8,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 
-const BusinessCardSkeleton = () => {
+export const BusinessCardSkeleton = () => {
   return (
     <div className="overflow-hidden rounded-2xl border border-[#dce6e4] bg-white shadow-sm animate-pulse">
       <div className="h-[220px] w-full bg-gray-200" />

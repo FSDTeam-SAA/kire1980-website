@@ -122,8 +122,9 @@ export default function Banner() {
         </h1>
 
         <p className="mt-6 text-white text-sm md:text-lg max-w-2xl mx-auto leading-relaxed">
-          Discover top-rated professionals for beauty, fitness, and wellness.
-          Real-time availability and seamless booking all in one place.
+          Discover top-rated professionals for beauty, fitness, and wellness etc
+          . Real-time availability, verified reviews, and seamless booking all
+          in one place.
         </p>
 
         {/* Search Box Container */}

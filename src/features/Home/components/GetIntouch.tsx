@@ -67,14 +67,14 @@ export default function GetIntouch() {
           {/* Left Side */}
           <div className="max-w-md">
             <div className="flex items-center gap-3">
-              <div className="relative flex h-8 w-8 items-end gap-[3px]">
+              {/* <div className="relative flex h-8 w-8 items-end gap-[3px]">
                 <span className="h-5 w-[6px] bg-[#1aa39a]" />
                 <span className="h-7 w-[6px] bg-[#1aa39a]" />
                 <span className="h-3 w-[6px] bg-[#1aa39a]" />
               </div>
               <span className="text-2xl font-bold text-[#1f2937]">
                 Medixo365
-              </span>
+              </span> */}
             </div>
 
             <h2 className="mt-8 text-4xl font-bold leading-tight text-[#1f2937] md:text-5xl">
@@ -86,7 +86,7 @@ export default function GetIntouch() {
               anything else, our team is ready to answer all your questions.
             </p>
 
-            <div className="mt-10 space-y-6">
+            {/* <div className="mt-10 space-y-6">
               <div className="flex items-start gap-4">
                 <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#eef6f5]">
                   <MapPin className="h-5 w-5 text-[#1aa39a]" />
@@ -112,7 +112,7 @@ export default function GetIntouch() {
                   <p className="mt-1 text-sm text-[#6b7280]">+38978376808</p>
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Right Side Form */}

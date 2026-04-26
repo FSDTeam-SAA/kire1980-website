@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
 const navigation = [
-  { name: "Profile", href: "/user", icon: SendToBack },
+  { name: "Profile", href: "/user/profile", icon: SendToBack },
   { name: "My Bookings", href: "/user/bookings", icon: ShoppingBag },
   { name: "Wish List", href: "/user/wish-list", icon: Heart },
   { name: "Settings", href: "/user/setting", icon: Settings },

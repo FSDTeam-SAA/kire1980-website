@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Star,
   ChevronDown,
@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import BusinessMap from "./business-map";
 
 interface ServiceItemProps {
   service: Service;
@@ -70,10 +71,23 @@ const ServiceDetails = () => {
   const [notes, setNotes] = useState("");
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const { id } = useParams();
   const router = useRouter();
   const session = useSession();
   const token = session?.data?.user?.accessToken;
+  const isAuthenticated = !!session?.data?.user;
+
+  // Check authentication and show dialog if needed
+  const requireAuth = (action: () => void) => {
+    if (!isAuthenticated) {
+      setPendingAction(() => action);
+      setIsAuthDialogOpen(true);
+    } else {
+      action();
+    }
+  };
 
   const containerClasses = "container mx-auto";
 
@@ -199,12 +213,14 @@ const ServiceDetails = () => {
     );
   };
 
-  // Handle service selection
+  // Handle service selection - protected
   const handleServiceSelect = (service: Service) => {
-    setSelectedServices((prev) => {
-      const newMap = new Map(prev);
-      newMap.set(service._id, { service, staff: null });
-      return newMap;
+    requireAuth(() => {
+      setSelectedServices((prev) => {
+        const newMap = new Map(prev);
+        newMap.set(service._id, { service, staff: null });
+        return newMap;
+      });
     });
   };
 
@@ -250,7 +266,7 @@ const ServiceDetails = () => {
 
   const timeSlots = generateTimeSlots();
 
-  // Handle date selection
+  // Handle date selection - protected
   const handleDateSelect = (date: Date | undefined) => {
     if (selectedServices.size === 0) {
       toast.error("No Services Selected", {
@@ -258,45 +274,56 @@ const ServiceDetails = () => {
       });
       return;
     }
-    setGlobalDate(date);
-    if (date) {
-      setIsTimeSlotOpen(true);
-    }
+    requireAuth(() => {
+      setGlobalDate(date);
+      if (date) {
+        setIsTimeSlotOpen(true);
+      }
+    });
   };
 
-  // Handle confirm booking
+  // Handle confirm booking - protected
   const handleConfirmBooking = () => {
-    if (!globalDate) {
-      toast.error("Date Required", {
-        description: "Please select a date for your booking.",
-      });
-      return;
-    }
-    if (!globalTimeSlot) {
-      toast.error("Time Slot Required", {
-        description: "Please select a time slot for your booking.",
-      });
-      return;
-    }
-    if (selectedServices.size === 0) {
-      toast.error("No Services Selected", {
-        description: "Please select at least one service to book.",
-      });
-      return;
-    }
+    requireAuth(() => {
+      if (!globalDate) {
+        toast.error("Date Required", {
+          description: "Please select a date for your booking.",
+        });
+        return;
+      }
+      if (!globalTimeSlot) {
+        toast.error("Time Slot Required", {
+          description: "Please select a time slot for your booking.",
+        });
+        return;
+      }
+      if (selectedServices.size === 0) {
+        toast.error("No Services Selected", {
+          description: "Please select at least one service to book.",
+        });
+        return;
+      }
 
-    // Check if all selected services have staff assigned
-    const missingStaff = Array.from(selectedServices.values()).some(
-      (item) => !item.staff,
-    );
-    if (missingStaff) {
-      toast.error("Staff Required", {
-        description: "Please select a professional for each service.",
-      });
-      return;
-    }
+      // Check if all selected services have staff assigned
+      const missingStaff = Array.from(selectedServices.values()).some(
+        (item) => !item.staff,
+      );
+      if (missingStaff) {
+        toast.error("Staff Required", {
+          description: "Please select a professional for each service.",
+        });
+        return;
+      }
 
-    setIsBookingModalOpen(true);
+      setIsBookingModalOpen(true);
+    });
+  };
+
+  // Handle wishlist - protected
+  const handleWishlist = () => {
+    requireAuth(() => {
+      wishListMutation();
+    });
   };
 
   // Submit booking with new payload structure
@@ -362,10 +389,10 @@ const ServiceDetails = () => {
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-slate-800 mb-2">
-            Business Not Found
+            Service Not Found
           </h2>
           <p className="text-slate-500">
-            The business you&apos;re looking for doesn&apos;t exist.
+            The service you&apos;re looking for doesn&apos;t exist.
           </p>
         </div>
       </div>
@@ -423,7 +450,7 @@ const ServiceDetails = () => {
           <div className="flex gap-2 w-full md:w-auto">
             <Button
               disabled={wishListPending}
-              onClick={() => wishListMutation()}
+              onClick={handleWishlist}
               variant="outline"
               size="icon"
               className="rounded-full cursor-pointer hover:bg-[#0096a1] hover:text-white"
@@ -667,15 +694,6 @@ const ServiceDetails = () => {
                     </div>
                   ))
                 )}
-                {selectedServices.size > 0 && (
-                  <>
-                    <hr />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-[#0096a1]">${totalPrice}</span>
-                    </div>
-                  </>
-                )}
               </div>
 
               <div className="space-y-4">
@@ -704,6 +722,16 @@ const ServiceDetails = () => {
                     {globalTimeSlot}
                   </p>
                 )}
+
+                {selectedServices.size > 0 && (
+                  <>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-[#0096a1]">${totalPrice}</span>
+                    </div>
+                  </>
+                )}
+
                 <Button
                   onClick={handleConfirmBooking}
                   className="w-full bg-[#0096a1] hover:bg-[#007a83] py-6 text-md font-bold text-white cursor-pointer"
@@ -715,6 +743,42 @@ const ServiceDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Map Section - Add this after About section */}
+        <section className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Location</h2>
+
+          {/* Map Component */}
+          <BusinessMap
+            businessName={business.businessName}
+            address={business.address}
+            city={business.city}
+            country={business.country}
+            className="w-full"
+          />
+
+          {/* Location Details */}
+          <div className="mt-4 flex items-start gap-3 p-4 bg-slate-50 rounded-lg">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <MapPin size={18} className="text-[#0096a1]" />
+            </div>
+            <div>
+              <p className="font-medium text-slate-800">Address</p>
+              <p className="text-sm text-slate-600 mt-0.5">
+                {business.address ? `${business.address}, ` : ""}
+                {business.city && `${business.city}`}
+                {business.postalCode && `, ${business.postalCode}`}
+                {business.country && `, ${business.country}`}
+              </p>
+              {(!business.address || !business.city) && (
+                <p className="text-xs text-slate-400 mt-1">
+                  * Exact street address may vary. Please contact the business
+                  for precise location.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* 5. AMENITIES & LOCATION */}
         <section className="py-16 border-t mt-12">
@@ -886,6 +950,52 @@ const ServiceDetails = () => {
                 className="bg-[#0096a1] hover:bg-[#007a83] text-white px-8 cursor-pointer"
               >
                 Done
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Authentication Required Dialog */}
+      <Dialog open={isAuthDialogOpen} onOpenChange={setIsAuthDialogOpen}>
+        <DialogContent className="max-w-md text-center">
+          <div className="flex flex-col items-center gap-4 py-6">
+            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center">
+              <Heart className="w-8 h-8 text-amber-600" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-slate-800">
+                Login Required
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2 text-center">
+              <p className="text-slate-600">
+                Please login or sign up to continue with your booking.
+              </p>
+              <p className="text-sm text-slate-500">
+                Create an account to save your favorite businesses and manage
+                your appointments.
+              </p>
+            </div>
+            <div className="flex gap-3 mt-4 w-full">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsAuthDialogOpen(false);
+                  setPendingAction(null);
+                }}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  setIsAuthDialogOpen(false);
+                  router.push("/login");
+                }}
+                className="flex-1 bg-[#0096a1] hover:bg-[#007a83] text-white cursor-pointer"
+              >
+                Login
               </Button>
             </div>
           </div>

@@ -5,7 +5,7 @@ import { Facebook, Twitter, Instagram, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-[#f8fbfa] pt-16 pb-8">
+    <footer className="bg-[#f8fbfa] pb-8">
       <div className="container mx-auto px-4">
         {/* Top */}
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4">

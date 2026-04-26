@@ -22,22 +22,61 @@ export async function proxy(request: NextRequest) {
 
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
 
+  // Check if it's the homepage
+  const isHomepage = pathname === "/";
+
   // 1️⃣ Guest → dashboard block
   if (isGuest && (isBusinessRoute || isUserRoute)) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // 2️⃣ BUSINESS dashboard protection
+  // 2️⃣ BUSINESSOWNER restrictions - only allowed on /business routes
+  if (!isGuest && userRole === "businessowner") {
+    // Block access to homepage
+    if (isHomepage) {
+      return NextResponse.redirect(new URL("/business", request.url));
+    }
+
+    // Block access to user routes
+    if (isUserRoute) {
+      return NextResponse.redirect(new URL("/business", request.url));
+    }
+
+    // Block access to auth routes
+    if (isAuthRoute) {
+      return NextResponse.redirect(new URL("/business", request.url));
+    }
+
+    // Block access to any non-business route (except API, static files handled by matcher)
+    if (!isBusinessRoute) {
+      return NextResponse.redirect(new URL("/business", request.url));
+    }
+  }
+
+  // 3️⃣ CUSTOMER restrictions - can access homepage, /user routes, but not /business
+  if (!isGuest && userRole === "customer") {
+    // Block access to business routes
+    if (isBusinessRoute) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+
+    // Block access to auth routes
+    if (isAuthRoute) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+  }
+
+  // 4️⃣ BUSINESS dashboard protection (general - keep as fallback)
   if (!isGuest && isBusinessRoute && userRole !== "businessowner") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 3️⃣ USER dashboard protection
+  // 5️⃣ USER dashboard protection (general - keep as fallback)
   if (!isGuest && isUserRoute && userRole !== "customer") {
     return NextResponse.redirect(new URL("/", request.url));
   }
 
-  // 4️⃣ Logged-in user → auth page block
+  // 6️⃣ Logged-in user → auth page block
   if (!isGuest && isAuthRoute) {
     return NextResponse.redirect(new URL("/", request.url));
   }

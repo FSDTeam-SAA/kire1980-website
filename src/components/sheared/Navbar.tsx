@@ -275,7 +275,7 @@ export default function Navbar() {
           )}
 
           {/* CTA */}
-          {role === "businessowner" && (
+          {role === "customer" && (
             <Link href={`/list-your-business`}>
               <button className="h-[44px] rounded-xl bg-primary px-6 text-[16px] font-semibold text-white transition hover:opacity-90 cursor-pointer">
                 List Your Business
@@ -350,7 +350,7 @@ export default function Navbar() {
                   >
                     <LogOut size={16} className="mr-2" /> Logout
                   </button>
-                  {role === "businessowner" && (
+                  {role === "customer" && (
                     <Link href="/list-your-business">
                       <button className="w-full h-[54px] rounded-xl bg-primary text-[16px] font-semibold text-white hover:opacity-90 transition shadow-sm">
                         List Your Business

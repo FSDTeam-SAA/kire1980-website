@@ -1,9 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
+
 import { useState } from "react";
 import { Check, X, ChevronRight, Calendar } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+
+// ================= TYPES =================
 
 interface Booking {
   _id: string;
@@ -55,6 +71,8 @@ interface ApiResponse {
   };
 }
 
+// ================= API FUNCTIONS =================
+
 const fetchBookings = async (token: string): Promise<ApiResponse> => {
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings`,
@@ -65,7 +83,6 @@ const fetchBookings = async (token: string): Promise<ApiResponse> => {
       },
     },
   );
-
   if (!response.ok) throw new Error("Failed to fetch bookings");
   return response.json();
 };
@@ -82,7 +99,6 @@ const confirmBooking = async ({ id, token }: { id: string; token: string }) => {
       body: JSON.stringify({ bookingStatus: "confirmed" }),
     },
   );
-
   if (!response.ok) throw new Error("Failed to confirm booking");
   return response.json();
 };
@@ -99,7 +115,7 @@ const cancelBooking = async ({
   const response = await fetch(
     `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/${id}/cancel`,
     {
-      method: "POST",
+      method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -107,8 +123,10 @@ const cancelBooking = async ({
       body: JSON.stringify({ cancellationReason: reason }),
     },
   );
-
-  if (!response.ok) throw new Error("Failed to cancel booking");
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to cancel booking");
+  }
   return response.json();
 };
 
@@ -130,10 +148,11 @@ const completeBooking = async ({
       body: JSON.stringify({ bookingStatus: "completed" }),
     },
   );
-
   if (!response.ok) throw new Error("Failed to complete booking");
   return response.json();
 };
+
+// ================= SKELETONS =================
 
 const StatsSkeleton = () => (
   <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -153,7 +172,7 @@ const StatsSkeleton = () => (
 );
 
 const TableSkeleton = () => (
-  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden m-8">
     <div className="p-6 border-b border-gray-50">
       <Skeleton className="h-6 w-48 mb-2" />
       <Skeleton className="h-3 w-32" />
@@ -178,17 +197,29 @@ const TableSkeleton = () => (
   </div>
 );
 
+// ================= MAIN COMPONENT =================
+
 export default function UpcomingAppointments() {
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedBookingId, setSelectedBookingId] = useState<string | null>(
     null,
   );
+  const [actionType, setActionType] = useState<
+    "confirm" | "cancel" | "complete"
+  >("confirm");
+  const [cancelReason, setCancelReason] = useState("");
 
-  const session = useSession();
-  const token = session?.data?.user?.accessToken;
+  const { data: sessionData } = useSession();
+  const token = sessionData?.user?.accessToken;
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error, refetch } = useQuery({
+  // Renamed isLoading to isInitialLoading to avoid conflict
+  const {
+    data,
+    isLoading: isInitialLoading,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["bookings"],
     queryFn: () => fetchBookings(token as string),
     enabled: !!token,
@@ -198,56 +229,66 @@ export default function UpcomingAppointments() {
     mutationFn: confirmBooking,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast.success("Booking confirmed successfully");
+      setDialogOpen(false);
     },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const cancelMutation = useMutation({
     mutationFn: cancelBooking,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
-      setCancelModalOpen(false);
-      setSelectedBookingId(null);
+      toast.success("Booking cancelled");
+      setDialogOpen(false);
+      setCancelReason("");
     },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const completeMutation = useMutation({
     mutationFn: completeBooking,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      toast.success("Booking marked as completed");
+      setDialogOpen(false);
     },
+    onError: (err: any) => toast.error(err.message),
   });
 
   const allBookings = data?.data?.data || [];
-
   const bookings = allBookings.filter(
     (booking) =>
       booking.bookingStatus === "pending" ||
       booking.bookingStatus === "confirmed",
   );
 
-  const totalBookings = bookings.length;
-
-  const handleConfirm = (id: string) => {
-    if (window.confirm("Are you sure you want to confirm this booking?")) {
-      confirmMutation.mutate({ id, token: token as string });
-    }
-  };
-
-  const handleCancelClick = (id: string) => {
+  const handleActionClick = (
+    id: string,
+    action: "confirm" | "cancel" | "complete",
+  ) => {
     setSelectedBookingId(id);
-    setCancelModalOpen(true);
+    setActionType(action);
+    setDialogOpen(true);
   };
 
-  const handleComplete = (id: string) => {
-    if (
-      window.confirm("Are you sure you want to mark this booking as completed?")
-    ) {
-      completeMutation.mutate({ id, token: token as string });
+  const handleConfirmAction = () => {
+    if (!selectedBookingId || !token) return;
+
+    if (actionType === "confirm") {
+      confirmMutation.mutate({ id: selectedBookingId, token });
+    } else if (actionType === "cancel") {
+      cancelMutation.mutate({
+        id: selectedBookingId,
+        token,
+        reason: cancelReason,
+      });
+    } else if (actionType === "complete") {
+      completeMutation.mutate({ id: selectedBookingId, token });
     }
   };
 
   const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString);
     return new Intl.DateTimeFormat("en-US", {
       month: "short",
       day: "numeric",
@@ -255,7 +296,7 @@ export default function UpcomingAppointments() {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    }).format(date);
+    }).format(new Date(dateString));
   };
 
   const getStatusColor = (status: string) => {
@@ -271,25 +312,65 @@ export default function UpcomingAppointments() {
     }
   };
 
+  const getDialogContent = () => {
+    switch (actionType) {
+      case "confirm":
+        return {
+          title: "Confirm Booking",
+          description: "Are you sure you want to confirm this booking?",
+          confirmText: "Confirm",
+          confirmButtonClass: "bg-[#00A3A3] hover:bg-[#008585] text-white",
+        };
+      case "cancel":
+        return {
+          title: "Cancel Booking",
+          description:
+            "Are you sure you want to cancel this booking? This action cannot be undone.",
+          confirmText: "Cancel Booking",
+          confirmButtonClass: "bg-red-500 hover:bg-red-600 text-white",
+        };
+      case "complete":
+        return {
+          title: "Complete Booking",
+          description: "Mark this booking as completed?",
+          confirmText: "Complete",
+          confirmButtonClass: "bg-blue-500 hover:bg-blue-600 text-white",
+        };
+      default:
+        return {
+          title: "",
+          description: "",
+          confirmText: "",
+          confirmButtonClass: "",
+        };
+    }
+  };
+
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F0F7F7] p-8 flex items-center justify-center">
-        <div className="bg-white rounded-xl p-8 text-center">
-          <p className="text-red-500 mb-4 text-base">Failed to load bookings</p>
-          <button
-            onClick={() => refetch()}
-            className="px-4 py-2 bg-[#00A3A3] text-white rounded-lg text-sm font-medium"
-          >
+      <div className="min-h-screen bg-[#F0F7F7] flex items-center justify-center p-8">
+        <div className="bg-white p-8 rounded-xl shadow-md text-center">
+          <p className="text-red-500 mb-4">Error loading bookings</p>
+          <Button onClick={() => refetch()} className="bg-[#00A3A3]">
             Retry
-          </button>
+          </Button>
         </div>
       </div>
     );
   }
 
+  const { title, description, confirmText, confirmButtonClass } =
+    getDialogContent();
+
+  // Loading check for mutations
+  const isActionPending =
+    confirmMutation.isPending ||
+    cancelMutation.isPending ||
+    completeMutation.isPending;
+
   return (
-    <div className="min-h-screen bg-[#F0F7F7]">
-      {isLoading ? (
+    <div className="min-h-screen bg-[#F0F7F7] p-8">
+      {isInitialLoading ? (
         <>
           <StatsSkeleton />
           <TableSkeleton />
@@ -301,7 +382,7 @@ export default function UpcomingAppointments() {
               Upcoming Appointments
             </h2>
             <p className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-wide">
-              Total {totalBookings} bookings found
+              Total {bookings.length} bookings found
             </p>
           </div>
 
@@ -317,9 +398,8 @@ export default function UpcomingAppointments() {
                   <th className="px-6 py-5 text-center">Actions</th>
                 </tr>
               </thead>
-
               <tbody className="divide-y divide-gray-50">
-                {bookings.slice(0, 5).map((booking) => (
+                {bookings.map((booking) => (
                   <tr
                     key={booking._id}
                     className="text-sm text-gray-600 hover:bg-gray-50 transition-colors"
@@ -327,57 +407,54 @@ export default function UpcomingAppointments() {
                     <td className="px-6 py-4 font-medium text-gray-700">
                       {booking.userId.email.split("@")[0]}
                     </td>
-
                     <td className="px-6 py-4">
                       {booking.services[0]?.serviceId?.serviceName}
                     </td>
-
                     <td className="px-6 py-4">
                       {booking.services[0]?.selectedProvider?.firstName}{" "}
                       {booking.services[0]?.selectedProvider?.lastName}
                     </td>
-
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Calendar size={14} />
                         {formatDateTime(booking.services[0]?.dateAndTime)}
                       </div>
                     </td>
-
                     <td className="px-6 py-4 text-center">
                       <span
-                        className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${getStatusColor(
-                          booking.bookingStatus,
-                        )}`}
+                        className={`text-[10px] font-black px-2.5 py-1 rounded-full border ${getStatusColor(booking.bookingStatus)}`}
                       >
                         {booking.bookingStatus.toUpperCase()}
                       </span>
                     </td>
-
                     <td className="px-6 py-4 text-center">
                       <div className="flex justify-center gap-2">
                         {booking.bookingStatus === "pending" && (
                           <>
                             <button
-                              onClick={() => handleConfirm(booking._id)}
-                              className="w-8 h-8 rounded-full bg-[#00A3A3] text-white flex items-center justify-center"
+                              onClick={() =>
+                                handleActionClick(booking._id, "confirm")
+                              }
+                              className="w-8 h-8 rounded-full bg-[#00A3A3] text-white flex items-center justify-center hover:bg-emerald-600 transition-colors"
                             >
                               <Check size={16} />
                             </button>
-
                             <button
-                              onClick={() => handleCancelClick(booking._id)}
-                              className="w-8 h-8 rounded-full bg-[#FF4D4D] text-white flex items-center justify-center"
+                              onClick={() =>
+                                handleActionClick(booking._id, "cancel")
+                              }
+                              className="w-8 h-8 rounded-full bg-[#FF4D4D] text-white flex items-center justify-center hover:bg-red-600 transition-colors"
                             >
                               <X size={16} />
                             </button>
                           </>
                         )}
-
                         {booking.bookingStatus === "confirmed" && (
                           <button
-                            onClick={() => handleComplete(booking._id)}
-                            className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center"
+                            onClick={() =>
+                              handleActionClick(booking._id, "complete")
+                            }
+                            className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center hover:bg-blue-600 transition-colors"
                           >
                             <Check size={16} />
                           </button>
@@ -388,15 +465,58 @@ export default function UpcomingAppointments() {
                 ))}
               </tbody>
             </table>
-
             {bookings.length === 0 && (
               <div className="text-center py-12 text-gray-400 text-sm">
-                No bookings found
+                No upcoming bookings
               </div>
             )}
           </div>
         </div>
       )}
+
+      {/* Action Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>{title}</DialogTitle>
+            <DialogDescription>{description}</DialogDescription>
+          </DialogHeader>
+
+          {actionType === "cancel" && (
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="cancelReason">
+                  Cancellation Reason (Optional)
+                </Label>
+                <Textarea
+                  id="cancelReason"
+                  placeholder="Reason for cancellation..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              disabled={isActionPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmAction}
+              disabled={isActionPending}
+              className={confirmButtonClass}
+            >
+              {isActionPending ? "Processing..." : confirmText}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

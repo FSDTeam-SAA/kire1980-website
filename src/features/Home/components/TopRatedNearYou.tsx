@@ -79,7 +79,7 @@ export default function TopRatedNearYou() {
         {/* Cards */}
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           {data.slice(0, 8).map((item) => (
-            <Link key={item._id} href={`/business/${item._id}`}>
+            <Link key={item._id} href={`/services/${item._id}`}>
               <div className="overflow-hidden rounded-2xl border border-[#dce6e4] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-md">
                 {/* Image */}
                 <div className="relative h-[220px] w-full overflow-hidden">

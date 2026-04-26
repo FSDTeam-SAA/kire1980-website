@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Trash2,
+  ArrowRight,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
+import Image from "next/image";
 
 // --- Schema Definition ---
 const businessSchema = z.object({
@@ -457,7 +459,7 @@ const BusinessSignUpForm = () => {
         )}
 
         {/* Form Card - Wider */}
-        <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm">
+        <div className="bg-white border  border-[#F0F5F5] rounded-[32px] p-10 shadow-sm">
           <Form {...form}>
             <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
               {/* STEP 1: Basic Info */}
@@ -812,7 +814,9 @@ const BusinessSignUpForm = () => {
                             key={index}
                             className="relative group aspect-square"
                           >
-                            <img
+                            <Image
+                              width={1000}
+                              height={1000}
                               src={URL.createObjectURL(photo)}
                               alt={`Upload ${index + 1}`}
                               className="w-full h-full object-cover rounded-xl border border-gray-200"
@@ -885,6 +889,22 @@ const BusinessSignUpForm = () => {
 
         {/* Security Badges */}
         <div className="mt-10 flex flex-col items-center gap-4 text-gray-400 text-sm">
+          <div className="flex flex-col text-center space-y-[10px] mb-4">
+            <span>
+              Already have an account?{" "}
+              <Link href="/login" className="text-[#159A9C] font-medium">
+                Log in here{" "}
+                <ArrowRight size={20} className="inline-block" />{" "}
+              </Link>
+            </span>
+            <span className="text-[#5F7D7D] text-[14px]">
+              Are you a wellness professional?{" "}
+              <span className="text-[#1E2A2A] font-semibold text-[16px]">
+                Create a customer account{" "}
+              </span>
+            </span>
+          </div>
+
           <div className="flex gap-6 font-medium">
             <span className="flex items-center gap-2">
               <Lock size={18} /> Secure & encrypted

@@ -183,35 +183,36 @@ export default function Banner() {
                     </button>
                   </div>
                   {services.map((service) => (
-                    <div
+                    <Link
                       key={service._id}
-                      className="p-4 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0 transition text-left"
-                      onClick={() => handleServiceClick(service._id)}
+                      href={`/search-result/${service._id}`}
                     >
-                      <div className="flex justify-between">
-                        <div>
-                          <h3 className="font-bold text-gray-900">
-                            {service.serviceName}
-                          </h3>
-                          <p className="text-sm text-gray-500 line-clamp-1">
-                            {service.businessId.businessName}
-                          </p>
-                          <div className="flex gap-2 mt-2">
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
-                              {service.category}
-                            </span>
-                            <span className="text-xs font-bold text-[#1aa39a] mt-1">
-                              ${service.price}
-                            </span>
+                      <div className="p-4 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0 transition text-left">
+                        <div className="flex justify-between">
+                          <div>
+                            <h3 className="font-bold text-gray-900">
+                              {service.serviceName}
+                            </h3>
+                            <p className="text-sm text-gray-500 line-clamp-1">
+                              {service.businessId.businessName}
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <span className="text-xs bg-gray-100 px-2 py-1 rounded text-gray-600">
+                                {service.category}
+                              </span>
+                              <span className="text-xs font-bold text-[#1aa39a] mt-1">
+                                ${service.price}
+                              </span>
+                            </div>
                           </div>
+                          {service.isFeatured && (
+                            <span className="h-fit bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                              FEATURED
+                            </span>
+                          )}
                         </div>
-                        {service.isFeatured && (
-                          <span className="h-fit bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                            FEATURED
-                          </span>
-                        )}
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
               ) : (

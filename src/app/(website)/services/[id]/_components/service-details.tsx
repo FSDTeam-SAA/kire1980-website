@@ -694,15 +694,6 @@ const ServiceDetails = () => {
                     </div>
                   ))
                 )}
-                {selectedServices.size > 0 && (
-                  <>
-                    <hr />
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total</span>
-                      <span className="text-[#0096a1]">${totalPrice}</span>
-                    </div>
-                  </>
-                )}
               </div>
 
               <div className="space-y-4">
@@ -731,6 +722,16 @@ const ServiceDetails = () => {
                     {globalTimeSlot}
                   </p>
                 )}
+
+                {selectedServices.size > 0 && (
+                  <>
+                    <div className="flex justify-between text-lg font-bold">
+                      <span>Total</span>
+                      <span className="text-[#0096a1]">${totalPrice}</span>
+                    </div>
+                  </>
+                )}
+
                 <Button
                   onClick={handleConfirmBooking}
                   className="w-full bg-[#0096a1] hover:bg-[#007a83] py-6 text-md font-bold text-white cursor-pointer"

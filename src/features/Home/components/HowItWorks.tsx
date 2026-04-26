@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, CircleCheckBig, CalendarDays, ThumbsUp } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 const steps = [
   {
@@ -48,6 +49,8 @@ const stats = [
 ];
 
 export default function HowItWorks() {
+  const session = useSession();
+
   return (
     <section className="bg-[#F0F9F8] py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -94,21 +97,22 @@ export default function HowItWorks() {
           </div>
         </div>
 
-        {/* Stats Section */}
-        <div className="mt-20 pt-12">
-          <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
-            {stats.map((item, index) => (
-              <div key={index}>
-                <h3 className="text-4xl font-extrabold text-[#1f2937] md:text-6xl">
-                  {item.value}
-                </h3>
-                <p className="mt-3 text-sm font-medium text-[#5f7c7a] md:text-xl">
-                  {item.label}
-                </p>
-              </div>
-            ))}
+        {session?.status === "unauthenticated" && (
+          <div className="mt-20 pt-12">
+            <div className="grid grid-cols-2 gap-8 text-center md:grid-cols-4">
+              {stats.map((item, index) => (
+                <div key={index}>
+                  <h3 className="text-4xl font-extrabold text-[#1f2937] md:text-6xl">
+                    {item.value}
+                  </h3>
+                  <p className="mt-3 text-sm font-medium text-[#5f7c7a] md:text-xl">
+                    {item.label}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

@@ -168,7 +168,7 @@ export default function TopRatedNearYou() {
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-3xl font-bold text-[#1f2937] md:text-5xl">
-              Top Rated Near You
+              Recommended
             </h2>
             <p className="mt-2 text-base text-[#6b7280] md:text-lg">
               Highly recommended by your community.

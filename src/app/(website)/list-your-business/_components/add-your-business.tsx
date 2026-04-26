@@ -108,7 +108,7 @@ const AddYourBusiness = () => {
       country: "",
       city: "",
       postalCode: "",
-      sector: "",
+      sector: "wellness", // Set default value to "wellness"
       description: "",
       coverPhotos: [],
       openingHours: DAYS.map((day) => ({
@@ -162,7 +162,7 @@ const AddYourBusiness = () => {
     fetchCountries();
   }, []);
 
-  // --- Business Profile Mutation (Moved before conditional returns) ---
+  // --- Business Profile Mutation ---
   const {
     mutate: businessProfileMutation,
     isPending: isBusinessProfilePending,
@@ -319,10 +319,12 @@ const AddYourBusiness = () => {
     signOut({ callbackUrl: "/sign-up" });
   };
 
-  // Check if user is authenticated and has businessowner role (after all hooks)
+  // ========== ACCESS CONTROL ==========
+
+  // Show loading state while session is loading
   if (status === "loading") {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 mt-24 mb-10">
         <div className="max-w-[800px] mx-auto">
           <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm text-center">
             <Loader2 className="animate-spin h-12 w-12 mx-auto text-primary mb-4" />
@@ -338,47 +340,16 @@ const AddYourBusiness = () => {
     );
   }
 
-  // If user is not logged in or role is not businessowner
-  if (!session || role !== "businessowner") {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="max-w-[800px] mx-auto">
-          <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm text-center">
-            <div className="w-20 h-20 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-6">
-              <Lock className="w-10 h-10 text-red-600" />
-            </div>
-            <h2 className="text-2xl font-serif text-[#1A2E35] font-medium mb-3">
-              Access Restricted
-            </h2>
-            <p className="text-gray-600 mb-6">
-              This page is only for business owners. Please register as a
-              business owner to access this page.
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button
-                onClick={() => router.push("/")}
-                variant="outline"
-                className="cursor-pointer"
-              >
-                Go to Home
-              </Button>
-              <Button
-                onClick={() => signOut({ callbackUrl: "/sign-up" })}
-                className="bg-[#0096a1] hover:bg-[#007a83] text-white cursor-pointer"
-              >
-                Sign Up as Business
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // Redirect to sign-up if not authenticated or not a customer
+  if (!session || role !== "customer") {
+    router.push("/sign-up");
+    return null;
   }
 
   // Show loading state while submitting business profile
   if (isBusinessProfilePending) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8 mt-28 mb-10">
         <div className="max-w-[800px] mx-auto">
           <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm text-center">
             <Loader2 className="animate-spin h-12 w-12 mx-auto text-primary mb-4" />
@@ -394,8 +365,10 @@ const AddYourBusiness = () => {
     );
   }
 
+  // ========== MAIN COMPONENT RENDER (Only for customers) ==========
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-8 mt-24">
       {/* Progress Header */}
       <div className="max-w-[1000px] mx-auto mb-8 flex items-center justify-between">
         {step > 1 ? (
@@ -628,31 +601,17 @@ const AddYourBusiness = () => {
                           <Select
                             onValueChange={field.onChange}
                             defaultValue={field.value}
+                            value={field.value}
                           >
                             <FormControl>
-                              <SelectTrigger className="bg-[#F4F9F9] border-none h-12 rounded-xl">
+                              <SelectTrigger className="bg-[#F4F9F9] border-none h-12 rounded-xl w-full">
                                 <SelectValue placeholder="Select sector" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="wellness">
-                                Wellness & Spa
-                              </SelectItem>
-                              <SelectItem value="fitness">
-                                Fitness & Gym
-                              </SelectItem>
-                              <SelectItem value="beauty">
-                                Beauty & Salon
-                              </SelectItem>
-                              <SelectItem value="health">
-                                Health & Medical
-                              </SelectItem>
-                              <SelectItem value="yoga">
-                                Yoga & Meditation
-                              </SelectItem>
-                              <SelectItem value="nutrition">
-                                Nutrition & Diet
-                              </SelectItem>
+                              <SelectItem value="wellness">Wellness</SelectItem>
+                              <SelectItem value="fitness">Fitness</SelectItem>
+                              <SelectItem value="beauty">Beauty</SelectItem>
                             </SelectContent>
                           </Select>
                           <FormMessage />

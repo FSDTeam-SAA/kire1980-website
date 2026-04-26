@@ -230,12 +230,12 @@ export default function Banner() {
         {/* Action Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link href="#business">
-            <button className="w-full sm:w-auto bg-[#1aa39a] text-white px-10 py-3.5 rounded-lg font-bold hover:scale-105 transition shadow-lg">
+            <button className="w-full sm:w-auto bg-[#1aa39a] text-white px-10 py-3.5 rounded-lg font-bold hover:scale-105 transition shadow-lg cursor-pointer">
               Book Now
             </button>
           </Link>
           <Link href="/list-your-business">
-            <button className="w-full sm:w-auto border-2 border-white text-white px-10 py-3.5 rounded-lg font-bold hover:bg-white/10 transition">
+            <button className="w-full sm:w-auto border-2 border-white text-white px-10 py-3.5 rounded-lg font-bold hover:bg-white/10 transition cursor-pointer">
               Join as Business
             </button>
           </Link>

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import Link from "next/link";
 
 // --- Schema Definition ---
 const businessSchema = z.object({
@@ -433,9 +434,11 @@ const BusinessSignUpForm = () => {
             />
           </div>
         </div>
-        <button className="text-gray-400 hover:text-red-500 transition">
-          <X size={24} />
-        </button>
+        <Link href={`/sign-up`}>
+          <button className="text-gray-400 hover:text-red-500 transition cursor-pointer">
+            <X size={24} />
+          </button>
+        </Link>
       </div>
 
       <div className="max-w-[800px] mx-auto">

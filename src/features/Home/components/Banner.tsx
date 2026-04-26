@@ -185,7 +185,7 @@ export default function Banner() {
                   {services.map((service) => (
                     <Link
                       key={service._id}
-                      href={`/search-result/${service._id}`}
+                      href={`/services/${service?.businessId?._id}`}
                     >
                       <div className="p-4 hover:bg-teal-50 cursor-pointer border-b border-gray-100 last:border-0 transition text-left">
                         <div className="flex justify-between">

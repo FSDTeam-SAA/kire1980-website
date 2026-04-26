@@ -161,3 +161,35 @@ html.translated-rtl body {
     font-family: "Playfair Display", serif;
   }
 }
+
+/* Leaflet Map Styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 0.75rem;
+  padding: 0;
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  min-width: 200px;
+}
+
+.custom-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Fix for Leaflet default marker icons in production */
+.leaflet-default-icon-path {
+  background-image: url(https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png);
+}
+
+/* Ensure map tiles load properly */
+.leaflet-tile {
+  visibility: inherit !important;
+}

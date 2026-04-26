@@ -33,6 +33,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import BusinessMap from "./business-map";
 
 interface ServiceItemProps {
   service: Service;
@@ -715,6 +716,42 @@ const ServiceDetails = () => {
             </div>
           </div>
         </div>
+
+        {/* Map Section - Add this after About section */}
+        <section className="mt-8">
+          <h2 className="text-2xl font-bold mb-4">Location</h2>
+
+          {/* Map Component */}
+          <BusinessMap
+            businessName={business.businessName}
+            address={business.address}
+            city={business.city}
+            country={business.country}
+            className="w-full"
+          />
+
+          {/* Location Details */}
+          <div className="mt-4 flex items-start gap-3 p-4 bg-slate-50 rounded-lg">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <MapPin size={18} className="text-[#0096a1]" />
+            </div>
+            <div>
+              <p className="font-medium text-slate-800">Address</p>
+              <p className="text-sm text-slate-600 mt-0.5">
+                {business.address ? `${business.address}, ` : ""}
+                {business.city && `${business.city}`}
+                {business.postalCode && `, ${business.postalCode}`}
+                {business.country && `, ${business.country}`}
+              </p>
+              {(!business.address || !business.city) && (
+                <p className="text-xs text-slate-400 mt-1">
+                  * Exact street address may vary. Please contact the business
+                  for precise location.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* 5. AMENITIES & LOCATION */}
         <section className="py-16 border-t mt-12">

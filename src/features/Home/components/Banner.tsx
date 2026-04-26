@@ -58,7 +58,7 @@ export default function Banner() {
       if (!debouncedSearchTerm && !debouncedLocationTerm) return { data: [] };
 
       const params = new URLSearchParams();
-      if (debouncedSearchTerm) params.append("search", debouncedSearchTerm);
+      if (debouncedSearchTerm) params.append("title", debouncedSearchTerm);
       if (debouncedLocationTerm)
         params.append("location", debouncedLocationTerm);
 

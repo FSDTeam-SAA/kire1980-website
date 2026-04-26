@@ -13,6 +13,8 @@ export default function StaffManagement() {
   const limit = 10;
   const session = useSession();
   const tokne = session.data?.user?.accessToken;
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -52,8 +54,16 @@ export default function StaffManagement() {
     },
   });
 
-  const handleDelete = (id: string) => {
-    deleteStaffMutation.mutate(id);
+  const handleDeleteClick = (id: string) => {
+    setSelectedId(id);
+    setIsModalOpen(true);
+  };
+  const confirmDelete = () => {
+    if (selectedId) {
+      deleteStaffMutation.mutate(selectedId);
+    }
+    setIsModalOpen(false);
+    setSelectedId(null);
   };
 
   const staff = data?.data?.data || [];
@@ -168,7 +178,7 @@ export default function StaffManagement() {
                       </Link>
 
                       <button
-                        onClick={() => handleDelete(member._id)}
+                        onClick={() => handleDeleteClick(member._id)}
                         className="hover:text-red-500"
                       >
                         <Trash2 size={18} />
@@ -223,6 +233,34 @@ export default function StaffManagement() {
           </div>
         </div>
       </div>
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-[350px] shadow-lg">
+            <h2 className="text-lg font-semibold mb-2">Confirm Delete</h2>
+
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete this staff member? This action
+              cannot be undone.
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 border rounded"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

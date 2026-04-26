@@ -178,7 +178,7 @@ const CustomerSignUpForm = () => {
           Create your account
         </h1>
         <p className="text-gray-500 mt-2">
-          Join 50,000+ wellness seekers on Velura.
+          Join 50,000+ wellness seekers on BOOKERSI.
         </p>
       </div>
 
@@ -308,7 +308,7 @@ const CustomerSignUpForm = () => {
                   </FormControl>
                   <div className="space-y-1 leading-tight">
                     <p className="text-[13px] text-gray-600">
-                      I agree to Velura&apos;s{" "}
+                      I agree to BOOKERSI&apos;s{" "}
                       <Link href="/terms" className="text-primary underline">
                         Terms of Service
                       </Link>{" "}

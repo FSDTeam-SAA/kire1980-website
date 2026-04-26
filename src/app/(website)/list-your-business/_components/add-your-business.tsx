@@ -438,7 +438,7 @@ const AddYourBusiness = () => {
               Add your business
             </h1>
             <p className="text-gray-500 mt-2">
-              Join 8,000+ wellness businesses growing with Velura.
+              Join 8,000+ wellness businesses growing with BOOKERSI.
             </p>
           </div>
         )}
@@ -858,7 +858,7 @@ const AddYourBusiness = () => {
           </div>
           <div className="flex items-center gap-2 font-medium">
             <CheckCircle2 size={18} className="text-primary" /> 8,000+
-            businesses trust Velura
+            businesses trust BOOKERSI
           </div>
         </div>
       </div>

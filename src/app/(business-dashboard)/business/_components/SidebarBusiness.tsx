@@ -91,7 +91,7 @@ export default function SidebarBusiness() {
           }
 
           return (
-            <Link
+            <a
               key={item.name}
               href={item.href}
               className={cn(
@@ -103,7 +103,7 @@ export default function SidebarBusiness() {
             >
               <item.icon className="h-5 w-5" />
               {item.name}
-            </Link>
+            </a>
           );
         })}
       </nav>

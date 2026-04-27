@@ -36,6 +36,13 @@ const LANGUAGE_STORAGE_KEY = "bookersi-language";
 const languages = [
   { code: "en", label: "English" },
   { code: "mk", label: "Macedonian" },
+  { code: "bg", label: "Bulgarin" },
+  { code: "el", label: "Greece" },
+  { code: "sq", label: "Albania" },
+  { code: "sr", label: "Serbian" },
+  { code: "tr", label: "Turkish" },
+  { code: "de", label: "German" },
+  { code: "it", label: "Italian" },
 ] as const;
 
 type LanguageCode = (typeof languages)[number]["code"];

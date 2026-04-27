@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X, ChevronRight, Calendar } from "lucide-react";
+import { Check, X, Calendar } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSession } from "next-auth/react";
@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { useBusinessId } from "../../../../../../zustand/useServiceId";
 
 // ================= TYPES =================
 
@@ -73,9 +74,12 @@ interface ApiResponse {
 
 // ================= API FUNCTIONS =================
 
-const fetchBookings = async (token: string): Promise<ApiResponse> => {
+const fetchBookings = async (
+  token: string,
+  businessId: string,
+): Promise<ApiResponse> => {
   const response = await fetch(
-    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings`,
+    `${process.env.NEXT_PUBLIC_BACKEND_URL}/bookings/business/${businessId}?page=1&limit=5`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -212,6 +216,7 @@ export default function UpcomingAppointments() {
   const { data: sessionData } = useSession();
   const token = sessionData?.user?.accessToken;
   const queryClient = useQueryClient();
+  const { businessId } = useBusinessId();
 
   // Renamed isLoading to isInitialLoading to avoid conflict
   const {
@@ -221,7 +226,7 @@ export default function UpcomingAppointments() {
     refetch,
   } = useQuery({
     queryKey: ["bookings"],
-    queryFn: () => fetchBookings(token as string),
+    queryFn: () => fetchBookings(token as string, businessId as string),
     enabled: !!token,
   });
 
@@ -369,14 +374,14 @@ export default function UpcomingAppointments() {
     completeMutation.isPending;
 
   return (
-    <div className="min-h-screen bg-[#F0F7F7] p-8">
+    <div className="min-h-screen  bg-[#F0F7F7] py-8">
       {isInitialLoading ? (
         <>
           <StatsSkeleton />
           <TableSkeleton />
         </>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white  rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-6 border-b border-gray-50">
             <h2 className="font-bold text-gray-800 text-lg">
               Upcoming Appointments

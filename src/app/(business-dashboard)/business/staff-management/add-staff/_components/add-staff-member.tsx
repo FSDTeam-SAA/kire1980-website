@@ -17,11 +17,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useRouter } from "next/navigation";
 
 export default function AddStaffMember() {
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
   const { businessId } = useBusinessId();
+  const router = useRouter();
 
   const [image, setImage] = useState<File | null>(null);
 
@@ -90,7 +92,6 @@ export default function AddStaffMember() {
     mutationKey: ["add-staff"],
     mutationFn: async () => {
       const form = new FormData();
-
       form.append("firstName", formData.firstName);
       form.append("lastName", formData.lastName);
       form.append("email", formData.email);
@@ -121,13 +122,12 @@ export default function AddStaffMember() {
     onSuccess: (data) => {
       if (!data?.success) {
         toast.error(data?.message || "Something went wrong");
-        return;
+        router.push("/business/staff-management");
       }
-
-      toast.success("Staff added successfully");
     },
 
     onError: () => {
+      console.log("first");
       toast.error("Something went wrong");
     },
   });
@@ -185,6 +185,8 @@ export default function AddStaffMember() {
 
         <div className="grid md:grid-cols-2 gap-6">
           <Input
+            type="text"
+            className="h-14"
             placeholder="First Name"
             onChange={(e) =>
               setFormData({ ...formData, firstName: e.target.value })
@@ -192,6 +194,7 @@ export default function AddStaffMember() {
           />
 
           <Input
+            className="h-14"
             placeholder="Last Name"
             onChange={(e) =>
               setFormData({ ...formData, lastName: e.target.value })
@@ -199,6 +202,7 @@ export default function AddStaffMember() {
           />
 
           <Input
+            className="h-14"
             placeholder="Email"
             type="email"
             onChange={(e) =>
@@ -207,7 +211,9 @@ export default function AddStaffMember() {
           />
 
           <Input
+            className="h-14"
             placeholder="Phone"
+            type="number"
             onChange={(e) =>
               setFormData({ ...formData, phoneNumber: e.target.value })
             }

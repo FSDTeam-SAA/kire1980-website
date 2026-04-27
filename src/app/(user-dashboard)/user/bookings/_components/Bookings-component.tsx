@@ -74,7 +74,7 @@ export default function MyBookings() {
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";
 
-  const [page, setPage] = useState(1);
+  const [page] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
 
   // Review States

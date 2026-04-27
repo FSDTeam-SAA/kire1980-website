@@ -7,6 +7,7 @@ import Image from "next/image";
 import { StaffResponse } from "@/types/staffDataType";
 import { useSession } from "next-auth/react";
 import StaffStats from "./StaffStats";
+import { useBusinessId } from "../../../../../../zustand/useServiceId";
 
 export default function StaffManagement() {
   const [page, setPage] = useState(1);
@@ -15,6 +16,7 @@ export default function StaffManagement() {
   const tokne = session.data?.user?.accessToken;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { businessId } = useBusinessId();
 
   const queryClient = useQueryClient();
 
@@ -22,7 +24,7 @@ export default function StaffManagement() {
     queryKey: ["staff", page],
     queryFn: async () => {
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_BACKEND_URL}/staff?page=${page}&limit=${limit}`,
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/staff/business/${businessId}?page=${page}&limit=${limit}`,
       );
 
       if (!res.ok) throw new Error("Failed to fetch staff");
@@ -70,6 +72,7 @@ export default function StaffManagement() {
   const meta = data?.data?.meta;
 
   if (isLoading) return <p>Loading...</p>;
+
   if (error) return <p>Error loading staff</p>;
 
   return (
@@ -94,145 +97,156 @@ export default function StaffManagement() {
 
       <StaffStats />
 
-      {/* Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left">
-            <thead className="border-b">
-              <tr>
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Staff Member
-                </th>
+      {staff.length === 0 ? (
+        <p className="text-gray-500 text-sm mt-1 text-center font-bold ">
+          No staff members found.
+        </p>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="border-b">
+                <tr>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                    Staff Member
+                  </th>
 
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Email
-                </th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                    Email
+                  </th>
 
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Assigned Services
-                </th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                    Assigned Services
+                  </th>
 
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Status
-                </th>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                    Status
+                  </th>
 
-                <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                  Action
-                </th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y">
-              {staff.map((member) => (
-                <tr key={member._id}>
-                  {/* Name */}
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Image
-                        alt="Profile"
-                        width={50}
-                        height={50}
-                        src={member.avatar?.url}
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
-
-                      <span className="text-sm font-medium">
-                        {member.firstName} {member.lastName}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Email */}
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {member.email}
-                  </td>
-
-                  {/* Services */}
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2 flex-wrap">
-                      {member.serviceIds?.map((service) => (
-                        <span
-                          key={service._id}
-                          className="px-3 py-1 bg-[#F0F9F9] text-[#4EA5A5] text-xs rounded-full border"
-                        >
-                          {service.serviceName}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-6 py-4 text-sm">
-                    {member.isActive ? (
-                      <span className="text-green-600 font-medium">Active</span>
-                    ) : (
-                      <span className="text-red-500">Inactive</span>
-                    )}
-                  </td>
-
-                  {/* Action */}
-                  <td className="px-6 py-4">
-                    <div className="flex gap-4 text-[#4EA5A5]">
-                      <Link href={`/business/staff-management/${member._id}`}>
-                        <Eye size={18} />
-                      </Link>
-
-                      <button
-                        onClick={() => handleDeleteClick(member._id)}
-                        className="hover:text-red-500"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
+                  <th className="px-6 py-4 text-sm font-semibold text-gray-600">
+                    Action
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
 
-        {/* Pagination */}
+              <tbody className="divide-y">
+                {staff.map((member) => (
+                  <tr key={member._id}>
+                    {/* Name */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Image
+                          alt="Profile"
+                          width={50}
+                          height={50}
+                          src={member.avatar?.url}
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
 
-        <div className="flex justify-between items-center p-4 border-t">
-          <p className="text-sm text-gray-500">
-            Page {meta?.page} of {meta?.totalPages}
-          </p>
+                        <span className="text-sm font-medium">
+                          {member.firstName} {member.lastName}
+                        </span>
+                      </div>
+                    </td>
 
-          <div className="flex gap-2">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className="px-4 py-2 border rounded disabled:opacity-40"
-            >
-              Prev
-            </button>
+                    {/* Email */}
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {member.email}
+                    </td>
 
-            {[...Array(meta?.totalPages || 1)].map((_, i) => {
-              const pageNumber = i + 1;
+                    {/* Services */}
+                    <td className="px-6 py-4">
+                      <div className="flex gap-2 flex-wrap">
+                        {member.serviceIds?.map((service) => (
+                          <span
+                            key={service._id}
+                            className="px-3 py-1 bg-[#F0F9F9] text-[#4EA5A5] text-xs rounded-full border"
+                          >
+                            {service.serviceName}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
 
-              return (
-                <button
-                  key={i}
-                  onClick={() => setPage(pageNumber)}
-                  className={`px-4 py-2 border rounded ${
-                    page === pageNumber ? "bg-[#00A3A3] text-white" : ""
-                  }`}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
+                    {/* Status */}
+                    <td className="px-6 py-4 text-sm">
+                      {member.isActive ? (
+                        <span className="text-green-600 font-medium">
+                          Active
+                        </span>
+                      ) : (
+                        <span className="text-red-500">Inactive</span>
+                      )}
+                    </td>
 
-            <button
-              disabled={page === meta?.totalPages}
-              onClick={() => setPage(page + 1)}
-              className="px-4 py-2 border rounded disabled:opacity-40"
-            >
-              Next
-            </button>
+                    {/* Action */}
+                    <td className="px-6 py-4">
+                      <div className="flex gap-4 text-[#4EA5A5]">
+                        <Link href={`/business/staff-management/${member._id}`}>
+                          <Eye size={18} />
+                        </Link>
+
+                        <button
+                          onClick={() => handleDeleteClick(member._id)}
+                          className="hover:text-red-500"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          {/* Pagination */}
+
+          {meta && meta?.totalPages > 1 && (
+            <div className="flex justify-between items-center p-4 border-t">
+              <p className="text-sm text-gray-500">
+                Page {meta?.page} of {meta?.totalPages}
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  disabled={page === 1}
+                  onClick={() => setPage(page - 1)}
+                  className="px-4 py-2 border rounded disabled:opacity-40"
+                >
+                  Prev
+                </button>
+
+                {[...Array(meta?.totalPages || 1)].map((_, i) => {
+                  const pageNumber = i + 1;
+
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => setPage(pageNumber)}
+                      className={`px-4 py-2 border rounded ${
+                        page === pageNumber ? "bg-[#00A3A3] text-white" : ""
+                      }`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
+                })}
+
+                <button
+                  disabled={page === meta?.totalPages}
+                  onClick={() => setPage(page + 1)}
+                  className="px-4 py-2 border rounded disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
+      {/* Table */}
+
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-6 w-[350px] shadow-lg">

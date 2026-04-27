@@ -27,13 +27,6 @@ import { useState } from "react";
 import EditServiceModal from "./EditServiceModal";
 import StatsCards from "./StatsCards";
 
-const stats = [
-  { label: "Total Services", value: "24" },
-  { label: "Active", value: "22" },
-  { label: "Top Category", value: "Wellness" },
-  { label: "Avg. Booking", value: "$72" },
-];
-
 export default function ServiceManagement() {
   const { data: session } = useSession();
   const token = session?.user?.accessToken || "";

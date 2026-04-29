@@ -68,30 +68,22 @@ export default function Footer() {
           {/* Business */}
           <div>
             <h3 className="text-lg font-semibold text-[#1f2937]">
-              For Business
+              Quick Actions
             </h3>
             <ul className="mt-4 space-y-2 text-sm text-[#6b7280]">
-              <li>List Your Business</li>
-              <li>Partner Support</li>
-              <li>Success Stories</li>
-              <li>Resources</li>
+              <li>Privacy Policy</li>
+              <li>Terms of Service</li>
+              <li>Email: info@bookersi.com | kire_dimiv@yahoo.com</li>
             </ul>
           </div>
         </div>
 
         {/* Divider */}
-        <div className="mt-10 border-t border-[#e5eceb] pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="mt-10 border-t border-[#e5eceb] pt-6 text-center">
           {/* Left */}
           <p className="text-sm text-[#6b7280]">
             © 2026 Bookersi. All Rights Reserved.
           </p>
-
-          {/* Right */}
-          <div className="flex items-center gap-6 text-sm text-[#6b7280]">
-            <span>Privacy Policy</span>
-            <span>Terms of Service</span>
-            <span>Cookies</span>
-          </div>
         </div>
       </div>
     </footer>

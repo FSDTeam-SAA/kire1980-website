@@ -27,7 +27,7 @@ export default function GrowYourBusiness() {
             </p>
 
             {/* Buttons */}
-            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+            {/* <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button className="flex items-center justify-center gap-2 bg-[#1aa39a] text-white px-6 py-3 rounded-md font-semibold hover:opacity-90 transition">
                 Start Selling Services
                 <ArrowRight size={16} />
@@ -36,7 +36,7 @@ export default function GrowYourBusiness() {
               <button className="border border-[#1aa39a] text-[#1aa39a] px-6 py-3 rounded-md font-semibold hover:bg-[#1aa39a]/10 transition">
                 See How It Works
               </button>
-            </div>
+            </div> */}
           </div>
 
           {/* RIGHT */}

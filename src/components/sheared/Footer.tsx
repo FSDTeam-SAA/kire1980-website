@@ -73,7 +73,7 @@ export default function Footer() {
             <ul className="mt-4 space-y-2 text-sm text-[#6b7280]">
               <li>Privacy Policy</li>
               <li>Terms of Service</li>
-              <li>Email: info@bookersi.com | kire_dimiv@yahoo.com</li>
+              <li>Email: info@bookersi.com</li>
             </ul>
           </div>
         </div>

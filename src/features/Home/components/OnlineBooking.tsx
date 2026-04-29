@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function OnlineBooking() {
   return (
     <section className="bg-[#eef6f5] py-16 md:py-20">
@@ -18,13 +20,11 @@ export default function OnlineBooking() {
 
         {/* Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-          <button className="bg-[#1aa39a] text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
-            List Your Business
-          </button>
-
-          <button className="border border-[#1aa39a] text-[#1aa39a] px-8 py-3 rounded-md font-semibold hover:bg-[#1aa39a]/10 transition">
-            Learn More
-          </button>
+          <Link href={`/sign-up`}>
+            <button className="bg-[#1aa39a] text-white px-8 py-3 rounded-md font-semibold hover:opacity-90 transition">
+              List Your Business
+            </button>
+          </Link>
         </div>
       </div>
     </section>

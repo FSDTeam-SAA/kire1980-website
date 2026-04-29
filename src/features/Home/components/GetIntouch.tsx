@@ -78,7 +78,7 @@ export default function GetIntouch() {
             </div>
 
             <h2 className="mt-8 text-4xl font-bold leading-tight text-[#1f2937] md:text-5xl">
-              Get in touch with our
+              Get in touch with our team
             </h2>
 
             <p className="mt-5 max-w-sm text-base leading-7 text-[#6b7280]">

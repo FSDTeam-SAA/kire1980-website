@@ -18,6 +18,8 @@ import {
   CheckCircle2,
   Trash2,
   ArrowRight,
+  Building2,
+  Image as ImageIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -42,7 +44,7 @@ import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 import Image from "next/image";
 
-// --- Schema Definition ---
+// --- Schema Definition (Matches backend DTO exactly) ---
 const businessSchema = z.object({
   businessName: z.string().min(2, "Business name is required"),
   businessEmail: z.string().email("Invalid email address"),
@@ -52,16 +54,20 @@ const businessSchema = z.object({
   country: z.string().min(1, "Select country"),
   city: z.string().min(1, "City/Address is required"),
   postalCode: z.string().optional(),
-  sector: z.string().min(1, "Select sector"),
-  openingHours: z.array(
-    z.object({
-      day: z.string(),
-      openTime: z.string(),
-      closeTime: z.string(),
-      isOpen: z.boolean(),
-    }),
-  ),
-  coverPhotos: z.array(z.instanceof(File)).optional(),
+  businessCategory: z.string().min(1, "Select business category"),
+  sector: z.string().optional(),
+  openingHour: z
+    .array(
+      z.object({
+        day: z.string(),
+        openTime: z.string(),
+        closeTime: z.string(),
+        isOpen: z.boolean(),
+      }),
+    )
+    .min(1, "At least one day must be open"),
+  logo: z.instanceof(File).optional(),
+  gallery: z.array(z.instanceof(File)).optional(),
   description: z.string().min(10, "Description is too short"),
 });
 
@@ -83,7 +89,9 @@ const BusinessSignUpForm = () => {
     Array<{ name: string; code: string }>
   >([]);
   const [isLoadingCountries, setIsLoadingCountries] = useState(true);
-  const [uploadedPhotos, setUploadedPhotos] = useState<File[]>([]);
+  const [uploadedLogo, setUploadedLogo] = useState<File | null>(null);
+  const [uploadedGallery, setUploadedGallery] = useState<File[]>([]);
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
   const router = useRouter();
 
@@ -98,21 +106,22 @@ const BusinessSignUpForm = () => {
       country: "",
       city: "",
       postalCode: "",
+      businessCategory: "",
       sector: "",
       description: "",
-      coverPhotos: [],
-      openingHours: DAYS.map((day) => ({
+      gallery: [],
+      openingHour: DAYS.map((day) => ({
         day,
-        openTime: "09:00",
-        closeTime: "17:00",
-        isOpen: !["Saturday", "Sunday"].includes(day),
+        openTime: "09:00", // Default open at 9 AM
+        closeTime: "18:00", // Default close at 6 PM
+        isOpen: !["Saturday", "Sunday"].includes(day), // Closed on weekends
       })),
     },
   });
 
   const { fields } = useFieldArray({
     control: form.control,
-    name: "openingHours",
+    name: "openingHour",
   });
 
   // --- Fetch Countries from Free API ---
@@ -152,6 +161,16 @@ const BusinessSignUpForm = () => {
     fetchCountries();
   }, []);
 
+  // Cleanup object URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (logoPreview) URL.revokeObjectURL(logoPreview);
+      uploadedGallery.forEach((photo) =>
+        URL.revokeObjectURL(URL.createObjectURL(photo)),
+      );
+    };
+  }, [logoPreview, uploadedGallery]);
+
   // --- Step 1: Auth Signup Mutation ---
   const { mutate: signupMutation, isPending: isSignupPending } = useMutation({
     mutationFn: async (values: {
@@ -178,11 +197,9 @@ const BusinessSignUpForm = () => {
       if (!response.ok)
         throw new Error(result?.message || "Registration failed");
 
-      // Extract access token from the nested response structure
       const token = result?.data?.data?.accessToken;
       if (!token) throw new Error("No access token received");
 
-      // Store token in localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(result?.data?.data?.user));
 
@@ -198,7 +215,7 @@ const BusinessSignUpForm = () => {
     },
   });
 
-  // --- Step 5: Business Profile Mutation ---
+  // --- Step 5: Business Profile Mutation (Matches backend DTO exactly) ---
   const {
     mutate: businessProfileMutation,
     isPending: isBusinessProfilePending,
@@ -206,11 +223,11 @@ const BusinessSignUpForm = () => {
     mutationFn: async (values: BusinessFormValues) => {
       const formData = new FormData();
 
-      // Required fields - match exactly with backend DTO
+      // Required fields - match exactly with backend CreateBusinessDto
       formData.append("businessName", values.businessName);
       formData.append("businessEmail", values.businessEmail);
       formData.append("phoneNumber", values.phoneNumber);
-      formData.append("businessCategory", values.sector);
+      formData.append("businessCategory", values.businessCategory);
       formData.append("totalStaff", String(values.totalStaff));
       formData.append("country", values.country);
       formData.append("city", values.city);
@@ -223,11 +240,18 @@ const BusinessSignUpForm = () => {
         }
       }
 
-      formData.append("sector", values.sector);
-      formData.append("description", values.description);
+      // Optional fields
+      if (values.sector) {
+        formData.append("sector", values.sector);
+      }
 
-      // Format opening hours - only include days that are open, without isOpen field
-      const formattedOpeningHours = values.openingHours
+      if (values.description) {
+        formData.append("description", values.description);
+      }
+
+      // Format opening hours - Use "openingHour" (singular)
+      // Only include days that are open, and don't send isOpen field
+      const formattedOpeningHours = values.openingHour
         .filter((hour) => hour.isOpen) // Only include open days
         .map(({ day, openTime, closeTime }) => ({
           day,
@@ -235,33 +259,30 @@ const BusinessSignUpForm = () => {
           closeTime,
         }));
 
-      // Only send openingHours if there are open days
-      if (formattedOpeningHours.length > 0) {
-        formData.append("openingHour", JSON.stringify(formattedOpeningHours));
+      // openingHour must be a non-empty array
+      if (formattedOpeningHours.length === 0) {
+        throw new Error("Please set opening hours for at least one day");
       }
 
-      // Append cover photos
-      if (values.coverPhotos && values.coverPhotos.length > 0) {
-        values.coverPhotos.forEach((photo) => {
+      formData.append("openingHour", JSON.stringify(formattedOpeningHours));
+
+      // Upload logo (single file)
+      if (values.logo) {
+        formData.append("logo", values.logo);
+      }
+
+      // Upload gallery images (multiple files)
+      if (values.gallery && values.gallery.length > 0) {
+        values.gallery.forEach((photo) => {
           formData.append("gallery", photo);
         });
       }
 
       const token = accessToken || localStorage.getItem("token");
 
-      console.log("Sending data:", {
-        businessName: values.businessName,
-        businessEmail: values.businessEmail,
-        phoneNumber: values.phoneNumber,
-        businessCategory: values.sector,
-        totalStaff: values.totalStaff,
-        country: values.country,
-        city: values.city,
-        postalCode: values.postalCode,
-        sector: values.sector,
-        openingHour: formattedOpeningHours,
-        description: values.description,
-      });
+      console.log("Sending data - openingHour:", formattedOpeningHours);
+      console.log("Has logo:", !!values.logo);
+      console.log("Gallery count:", values.gallery?.length || 0);
 
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_BACKEND_URL}/businesses`,
@@ -291,36 +312,109 @@ const BusinessSignUpForm = () => {
     },
   });
 
-  // --- Handle Photo Upload ---
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // --- Handle Logo Upload ---
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please upload an image file for the logo");
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Logo should be less than 2MB");
+      return;
+    }
+
+    // Clean up previous preview
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+    }
+
+    setUploadedLogo(file);
+    const previewUrl = URL.createObjectURL(file);
+    setLogoPreview(previewUrl);
+    form.setValue("logo", file);
+  };
+
+  const removeLogo = () => {
+    if (logoPreview) {
+      URL.revokeObjectURL(logoPreview);
+    }
+    setUploadedLogo(null);
+    setLogoPreview(null);
+    form.setValue("logo", undefined);
+  };
+
+  // --- Handle Gallery Upload ---
+  const handleGalleryUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files) return;
 
     const newPhotos: File[] = [];
     const maxPhotos = 5;
 
-    if (uploadedPhotos.length + files.length > maxPhotos) {
-      toast.error(`You can only upload up to ${maxPhotos} photos`);
+    if (uploadedGallery.length + files.length > maxPhotos) {
+      toast.error(`You can only upload up to ${maxPhotos} gallery photos`);
       return;
     }
 
     Array.from(files).forEach((file) => {
       if (file.type.startsWith("image/")) {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 5MB limit`);
+          return;
+        }
         newPhotos.push(file);
       } else {
         toast.error(`${file.name} is not an image file`);
       }
     });
 
-    const updatedPhotos = [...uploadedPhotos, ...newPhotos];
-    setUploadedPhotos(updatedPhotos);
-    form.setValue("coverPhotos", updatedPhotos);
+    const updatedPhotos = [...uploadedGallery, ...newPhotos];
+    setUploadedGallery(updatedPhotos);
+    form.setValue("gallery", updatedPhotos);
   };
 
-  const removePhoto = (index: number) => {
-    const updatedPhotos = uploadedPhotos.filter((_, i) => i !== index);
-    setUploadedPhotos(updatedPhotos);
-    form.setValue("coverPhotos", updatedPhotos);
+  const removeGalleryPhoto = (index: number) => {
+    const updatedPhotos = uploadedGallery.filter((_, i) => i !== index);
+    setUploadedGallery(updatedPhotos);
+    form.setValue("gallery", updatedPhotos);
+  };
+
+  // --- Function to apply default hours to all days ---
+  const applyDefaultHours = () => {
+    const days = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    days.forEach((day, index) => {
+      form.setValue(`openingHour.${index}.openTime`, "09:00");
+      form.setValue(`openingHour.${index}.closeTime`, "18:00");
+      form.setValue(
+        `openingHour.${index}.isOpen`,
+        !["Saturday", "Sunday"].includes(day),
+      );
+    });
+    toast.success("Default hours (9 AM - 6 PM) applied to all days");
+  };
+
+  // --- Function to apply same hours to weekdays ---
+  const applyWeekdayHours = () => {
+    const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+    const weekdayIndices = [0, 1, 2, 3, 4];
+    weekdayIndices.forEach((index) => {
+      form.setValue(`openingHour.${index}.openTime`, "09:00");
+      form.setValue(`openingHour.${index}.closeTime`, "18:00");
+      form.setValue(`openingHour.${index}.isOpen`, true);
+    });
+    toast.success("Weekday hours (9 AM - 6 PM) applied");
   };
 
   // --- Multi-step Logic ---
@@ -332,7 +426,6 @@ const BusinessSignUpForm = () => {
       const isValid = await form.trigger(fieldsToValidate as any);
       if (isValid) {
         const values = form.getValues();
-        // Call auth signup mutation
         signupMutation({
           businessName: values.businessName,
           businessEmail: values.businessEmail,
@@ -348,16 +441,15 @@ const BusinessSignUpForm = () => {
         "totalStaff",
         "country",
         "city",
-        "sector",
+        "businessCategory",
       ];
-    if (step === 3) fieldsToValidate = ["openingHours"];
-    if (step === 4) fieldsToValidate = ["coverPhotos"];
+    if (step === 3) fieldsToValidate = ["openingHour"];
+    if (step === 4) fieldsToValidate = ["logo", "gallery"];
     if (step === 5) fieldsToValidate = ["description"];
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
       if (step === 5) {
-        // Submit business profile
         const values = form.getValues();
         businessProfileMutation(values);
       } else {
@@ -372,7 +464,13 @@ const BusinessSignUpForm = () => {
     }
   };
 
-  // Show loading state while waiting for signup to complete
+  // Check if at least one day is open for Step 3
+  const hasAtLeastOneOpenDay = () => {
+    const openingHours = form.getValues("openingHour");
+    return openingHours?.some((hour) => hour.isOpen) || false;
+  };
+
+  // Loading states
   if (step === 1 && isSignupPending) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -391,7 +489,6 @@ const BusinessSignUpForm = () => {
     );
   }
 
-  // Show loading state while submitting business profile
   if (step === 5 && isBusinessProfilePending) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -458,8 +555,8 @@ const BusinessSignUpForm = () => {
           </div>
         )}
 
-        {/* Form Card - Wider */}
-        <div className="bg-white border  border-[#F0F5F5] rounded-[32px] p-10 shadow-sm">
+        {/* Form Card */}
+        <div className="bg-white border border-[#F0F5F5] rounded-[32px] p-10 shadow-sm">
           <Form {...form}>
             <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
               {/* STEP 1: Basic Info */}
@@ -551,6 +648,49 @@ const BusinessSignUpForm = () => {
                             {...field}
                           />
                         </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="businessCategory"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="font-semibold">
+                          Business Category
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="bg-[#F4F9F9] border-none h-12 rounded-xl !w-full">
+                              <SelectValue placeholder="Select business category" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="wellness">
+                              Wellness & Spa
+                            </SelectItem>
+                            <SelectItem value="fitness">
+                              Fitness & Gym
+                            </SelectItem>
+                            <SelectItem value="beauty">
+                              Beauty & Salon
+                            </SelectItem>
+                            <SelectItem value="health">
+                              Health & Medical
+                            </SelectItem>
+                            <SelectItem value="yoga">
+                              Yoga & Meditation
+                            </SelectItem>
+                            <SelectItem value="nutrition">
+                              Nutrition & Diet
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -664,7 +804,7 @@ const BusinessSignUpForm = () => {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel className="font-semibold">
-                            Sector
+                            Sector (Optional)
                           </FormLabel>
                           <Select
                             onValueChange={field.onChange}
@@ -704,12 +844,41 @@ const BusinessSignUpForm = () => {
                 </div>
               )}
 
-              {/* STEP 3: Opening Hours */}
+              {/* STEP 3: Opening Hours - With quick action buttons */}
               {step === 3 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
-                  <h2 className="text-2xl font-serif text-[#1A2E35] font-medium">
-                    Add your opening hours
-                  </h2>
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-2xl font-serif text-[#1A2E35] font-medium">
+                      Add your opening hours
+                    </h2>
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={applyDefaultHours}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Reset to 9-6
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={applyWeekdayHours}
+                        variant="outline"
+                        size="sm"
+                        className="text-xs"
+                      >
+                        Set Weekdays
+                      </Button>
+                    </div>
+                  </div>
+
+                  {!hasAtLeastOneOpenDay() && (
+                    <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 text-sm text-yellow-800">
+                      Please ensure at least one day is marked as open
+                    </div>
+                  )}
+
                   <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
                     <table className="w-full text-sm">
                       <thead className="bg-[#F4F9F9] text-gray-400 uppercase text-[10px] font-bold">
@@ -729,11 +898,11 @@ const BusinessSignUpForm = () => {
                             <td className="p-4">
                               <Switch
                                 checked={form.watch(
-                                  `openingHours.${index}.isOpen`,
+                                  `openingHour.${index}.isOpen`,
                                 )}
                                 onCheckedChange={(val) =>
                                   form.setValue(
-                                    `openingHours.${index}.isOpen`,
+                                    `openingHour.${index}.isOpen`,
                                     val,
                                   )
                                 }
@@ -742,23 +911,25 @@ const BusinessSignUpForm = () => {
                             </td>
                             <td className="p-4">
                               <Input
-                                className="h-9 w-24 text-xs bg-[#F4F9F9] border-none"
+                                type="time"
+                                className="h-9 w-28 text-xs bg-[#F4F9F9] border-none"
                                 {...form.register(
-                                  `openingHours.${index}.openTime`,
+                                  `openingHour.${index}.openTime`,
                                 )}
                                 disabled={
-                                  !form.watch(`openingHours.${index}.isOpen`)
+                                  !form.watch(`openingHour.${index}.isOpen`)
                                 }
                               />
                             </td>
                             <td className="p-4">
                               <Input
-                                className="h-9 w-24 text-xs bg-[#F4F9F9] border-none"
+                                type="time"
+                                className="h-9 w-28 text-xs bg-[#F4F9F9] border-none"
                                 {...form.register(
-                                  `openingHours.${index}.closeTime`,
+                                  `openingHour.${index}.closeTime`,
                                 )}
                                 disabled={
-                                  !form.watch(`openingHours.${index}.isOpen`)
+                                  !form.watch(`openingHour.${index}.isOpen`)
                                 }
                               />
                             </td>
@@ -767,49 +938,113 @@ const BusinessSignUpForm = () => {
                       </tbody>
                     </table>
                   </div>
+                  <p className="text-xs text-gray-400 text-center">
+                    💡 Tip: Click &quot;Reset to 9-6&quot; to set all days to 9
+                    AM - 6 PM, or &quot;Set Weekdays&quot; for Monday-Friday
+                    only
+                  </p>
                 </div>
               )}
 
-              {/* STEP 4: Showcase Your Venue - Photo Upload */}
+              {/* STEP 4: Logo & Gallery Upload */}
               {step === 4 && (
-                <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                   <h2 className="text-2xl font-serif text-[#1A2E35] font-medium">
-                    Showcase your venue
+                    Brand your business
                   </h2>
 
-                  {/* Photo Upload Area */}
+                  {/* Logo Upload Section */}
                   <div className="space-y-4">
-                    <FormLabel className="font-semibold text-[#1A2E35]">
-                      Cover Photos
+                    <FormLabel className="font-semibold text-[#1A2E35] flex items-center gap-2">
+                      <Building2 size={18} /> Business Logo (Optional)
                     </FormLabel>
 
-                    {/* Upload Button */}
+                    {!logoPreview ? (
+                      <div className="border-2 border-dashed border-[#E0F2F1] rounded-2xl p-6 text-center bg-[#F4F9F9]/50 hover:bg-[#F4F9F9] transition cursor-pointer relative">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        />
+                        <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                          <Upload className="text-primary" size={24} />
+                        </div>
+                        <h3 className="font-bold text-[#1A2E35]">
+                          Upload Logo
+                        </h3>
+                        <p className="text-xs text-gray-400 mt-1">
+                          JPG, PNG or GIF (Max 2MB)
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          Recommended: Square image, 500x500px
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-6 p-4 bg-[#F4F9F9] rounded-2xl">
+                        <div className="relative w-24 h-24 rounded-xl overflow-hidden border-2 border-primary/20">
+                          <Image
+                            src={logoPreview}
+                            alt="Logo preview"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-[#1A2E35]">
+                            {uploadedLogo?.name || "Logo file"}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {uploadedLogo?.size
+                              ? `${(uploadedLogo.size / 1024).toFixed(0)} KB`
+                              : "File size unknown"}
+                          </p>
+                        </div>
+                        <Button
+                          type="button"
+                          onClick={removeLogo}
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-full"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Gallery Upload Section */}
+                  <div className="space-y-4">
+                    <FormLabel className="font-semibold text-[#1A2E35] flex items-center gap-2">
+                      <ImageIcon size={18} /> Gallery Photos (Optional)
+                    </FormLabel>
+
                     <div className="border-2 border-dashed border-[#E0F2F1] rounded-2xl p-8 text-center bg-[#F4F9F9]/50 hover:bg-[#F4F9F9] transition cursor-pointer relative">
                       <input
                         type="file"
                         accept="image/*"
                         multiple
-                        onChange={handlePhotoUpload}
+                        onChange={handleGalleryUpload}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
                       <div className="bg-white w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
                         <Upload className="text-primary" size={24} />
                       </div>
                       <h3 className="font-bold text-[#1A2E35]">
-                        Upload Photos
+                        Upload Gallery Photos
                       </h3>
                       <p className="text-xs text-gray-400 mt-1">
                         Drag and drop images, or click to browse
                       </p>
                       <p className="text-xs text-gray-400 mt-2">
-                        Max 5 photos | Supported: JPG, PNG, GIF
+                        Max 5 photos | Max 5MB each | Supported: JPG, PNG, GIF
                       </p>
                     </div>
 
-                    {/* Photo Grid */}
-                    {uploadedPhotos.length > 0 && (
+                    {/* Gallery Grid */}
+                    {uploadedGallery.length > 0 && (
                       <div className="grid grid-cols-3 gap-4">
-                        {uploadedPhotos.map((photo, index) => (
+                        {uploadedGallery.map((photo, index) => (
                           <div
                             key={index}
                             className="relative group aspect-square"
@@ -818,12 +1053,12 @@ const BusinessSignUpForm = () => {
                               width={1000}
                               height={1000}
                               src={URL.createObjectURL(photo)}
-                              alt={`Upload ${index + 1}`}
+                              alt={`Gallery ${index + 1}`}
                               className="w-full h-full object-cover rounded-xl border border-gray-200"
                             />
                             <button
                               type="button"
-                              onClick={() => removePhoto(index)}
+                              onClick={() => removeGalleryPhoto(index)}
                               className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
                             >
                               <Trash2 size={14} />
@@ -836,7 +1071,7 @@ const BusinessSignUpForm = () => {
                 </div>
               )}
 
-              {/* STEP 5: Venue Description */}
+              {/* STEP 5: Description */}
               {step === 5 && (
                 <div className="space-y-5 animate-in slide-in-from-right-4 duration-500">
                   <h2 className="text-2xl font-serif text-[#1A2E35] font-medium">
@@ -854,14 +1089,14 @@ const BusinessSignUpForm = () => {
                         <FormControl>
                           <Textarea
                             placeholder="Describe your atmosphere, services, unique features, and what makes your venue special..."
-                            className="bg-[#F4F9F9] border-none min-h-[200px] rounded-xl resize-none"
+                            className="bg-[#F4F9F9] border-none min-h-[150px] rounded-xl resize-none"
                             {...field}
                           />
                         </FormControl>
                         <FormMessage />
-                        <p className="text-xs text-gray-400 mt-2">
+                        <p className="text-xs text-gray-400 mt-1">
                           This description will help customers understand what
-                          makes your venue unique. Minimum 10 characters.
+                          makes your venue unique.
                         </p>
                       </FormItem>
                     )}

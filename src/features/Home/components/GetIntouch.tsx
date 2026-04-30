@@ -176,12 +176,6 @@ export default function GetIntouch() {
               >
                 {mutation.isPending ? "Sending..." : "Send Message"}
               </button>
-
-              <p className="text-center text-xs text-[#94a3b8]">
-                By clicking send, you agree to our{" "}
-                <span className="underline">Terms of Service</span> and{" "}
-                <span className="underline">Privacy Policy</span>.
-              </p>
             </form>
           </div>
         </div>
